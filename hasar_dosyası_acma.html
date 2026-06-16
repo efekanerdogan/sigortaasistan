@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasar Dosyası Açma Asistanı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .tab-inactive {
+            color: #6b7280;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #10B981;
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 50;
+            right: 30px;
+            bottom: 30px;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(100px);
+            transition: all 0.3s ease;
+        }
+
+        #toast.show {
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body class="text-gray-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col hidden md:flex">
+        <div class="p-6 border-b border-slate-800 bg-slate-900/80">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+                    <i class="fa-solid fa-car-burst text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-[13px] font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-100 to-indigo-300 uppercase leading-tight">
+                        Hasar Dosyası<br />Açma Asistanı
+                    </h1>
+                </div>
+            </div>
+            <div
+                class="flex items-center gap-2 mt-4 text-[11px] font-medium px-2.5 py-1 bg-slate-800/80 rounded-md text-slate-300 w-fit border border-slate-700/50">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                Yerel Çalışma Alanı
+            </div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="switchTab('form')" id="btn-nav-form"
+                class="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 rounded-lg text-sm font-medium transition-colors">
+                <i class="fa-solid fa-plus"></i> Yeni Dosya Aç
+            </button>
+            <button onclick="switchTab('list')" id="btn-nav-list"
+                class="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors">
+                <i class="fa-solid fa-list"></i> Kayıtlı Dosyalar
+            </button>
+        </nav>
+        <div class="p-4 text-xs text-slate-500 border-t border-slate-800 text-center">
+            <div>
+                <a href="https://efekanerdogan.com/" target="_blank"
+                    class="hover:text-blue-400 transition-colors">Designed by <span class="text-orange-500">Efekan
+                        ERDOĞAN</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
+        <!-- Mobile Header -->
+        <header
+            class="md:hidden bg-slate-900 border-b border-slate-800 text-white p-4 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                    <i class="fa-solid fa-car-burst text-white text-sm"></i>
+                </div>
+                <h1
+                    class="font-bold text-sm tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-100 to-indigo-300 uppercase">
+                    HASAR ASİSTANI</h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="switchTab('form')" class="p-2 bg-blue-600 rounded"><i
+                        class="fa-solid fa-plus"></i></button>
+                <button onclick="switchTab('list')" class="p-2 bg-slate-700 rounded"><i
+                        class="fa-solid fa-list"></i></button>
+            </div>
+        </header>
+
+        <!-- Scrollable Area -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+
+            <!-- FORM VIEW -->
+            <div id="view-form" class="max-w-6xl mx-auto fade-in">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Yeni Hasar Dosyası</h2>
+                        <p class="text-gray-500 text-sm">Tüm bilgileri eksiksiz doldurmaya özen gösterin.</p>
+                    </div>
+                </div>
+
+                <form id="hasarForm" class="space-y-8">
+
+                    <!-- 1. Kaza ve Genel Bilgiler -->
+                    <div
+                        class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                        <h3
+                            class="text-lg font-bold text-slate-800 flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <span
+                                class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                            Kaza ve Konum Detayları
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                            <div class="input-group">
+                                <label class="text-slate-500">Kaza Tarihi</label>
+                                <input type="date" id="kazaTarihi" required class="bg-slate-50">
+                            </div>
+                            <div class="input-group">
+                                <label class="text-slate-500">Kaza Saati</label>
+                                <input type="time" id="kazaSaati" class="bg-slate-50">
+                            </div>
+                            <div class="input-group">
+                                <label class="text-slate-500">İl</label>
+                                <input type="text" id="il" placeholder="Örn: İstanbul" class="bg-slate-50">
+                            </div>
+                            <div class="input-group">
+                                <label class="text-slate-500">İlçe</label>
+                                <input type="text" id="ilce" placeholder="Örn: Kadıköy" class="bg-slate-50">
+                            </div>
+                            <div class="input-group md:col-span-2">
+                                <label class="text-slate-500">Sigorta Dosya No <span
+                                        class="text-xs text-slate-400 font-normal">(Varsa)</span></label>
+                                <input type="text" id="dosyaNo" placeholder="Sisteme atanan dosya numarası"
+                                    class="bg-slate-50 font-semibold text-blue-700">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mağdur ve Vuran Container -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                        <!-- 2. MAĞDUR -->
+                        <div
+                            class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+                            <h3
+                                class="text-lg font-bold text-slate-800 flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                                <span
+                                    class="bg-emerald-100 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                                Haklı Taraf (Mağdur)
+                            </h3>
+
+                            <div class="space-y-6">
+                                <!-- Sürücü -->
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <h4
+                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <i class="fa-solid fa-id-card"></i> Sürücü Bilgileri</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="input-group sm:col-span-2"><label>Adı Soyadı</label><input
+                                                type="text" id="m_surucuAd"></div>
+                                        <div class="input-group"><label>TC Kimlik No</label><input type="number"
+                                                id="m_surucuTc" maxlength="11"></div>
+                                        <div class="input-group"><label>Telefon</label><input type="tel"
+                                                id="m_surucuTel" placeholder="5XX XXX XX XX"></div>
+                                        <div class="input-group sm:col-span-2"><label>Doğum Tarihi</label><input
+                                                type="date" id="m_surucuDogum"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Araç -->
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <h4
+                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <i class="fa-solid fa-car"></i> Araç Bilgileri</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="input-group"><label>Plaka No</label><input type="text"
+                                                id="m_aracPlaka" class="uppercase font-bold text-emerald-700 bg-white"
+                                                placeholder="34 ABC 123"></div>
+                                        <div class="input-group"><label>Ruhsat Seri No</label><input type="text"
+                                                id="m_aracRuhsat" class="uppercase"></div>
+                                        <div class="input-group"><label>Marka / Model</label><input type="text"
+                                                id="m_aracMarkaModel"></div>
+                                        <div class="input-group"><label>Model Yılı</label><input type="number"
+                                                id="m_aracYil"></div>
+                                        <div class="input-group sm:col-span-2"><label>Şasi No</label><input type="text"
+                                                id="m_aracSasi" class="uppercase text-sm"></div>
+                                        <div class="input-group sm:col-span-2"><label>Motor No</label><input type="text"
+                                                id="m_aracMotor" class="uppercase text-sm"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Ruhsat Sahibi -->
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4
+                                            class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                            <i class="fa-solid fa-file-signature"></i> Ruhsat Sahibi</h4>
+                                        <label
+                                            class="flex items-center gap-2 text-xs font-medium cursor-pointer text-emerald-600 hover:text-emerald-800">
+                                            <input type="checkbox" id="m_ayniKisi"
+                                                class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                                onchange="kopyalaSurucu('m')"> Sürücü ile aynı
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="input-group sm:col-span-2"><label>Adı Soyadı</label><input
+                                                type="text" id="m_sahipAd"></div>
+                                        <div class="input-group"><label>TC Kimlik No</label><input type="number"
+                                                id="m_sahipTc"></div>
+                                        <div class="input-group"><label>Telefon</label><input type="tel"
+                                                id="m_sahipTel"></div>
+                                        <div class="input-group sm:col-span-2"><label>Doğum Tarihi</label><input
+                                                type="date" id="m_sahipDogum"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. VURAN -->
+                        <div
+                            class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+                            <h3
+                                class="text-lg font-bold text-slate-800 flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                                <span
+                                    class="bg-red-100 text-red-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+                                Kusurlu Taraf (Vuran)
+                            </h3>
+
+                            <div class="space-y-6">
+                                <!-- Sürücü -->
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <h4
+                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <i class="fa-solid fa-id-card"></i> Sürücü Bilgileri</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="input-group sm:col-span-2"><label>Adı Soyadı</label><input
+                                                type="text" id="v_surucuAd"></div>
+                                        <div class="input-group"><label>TC Kimlik No</label><input type="number"
+                                                id="v_surucuTc" maxlength="11"></div>
+                                        <div class="input-group"><label>Telefon</label><input type="tel"
+                                                id="v_surucuTel" placeholder="5XX XXX XX XX"></div>
+                                        <div class="input-group sm:col-span-2"><label>Doğum Tarihi</label><input
+                                                type="date" id="v_surucuDogum"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Araç -->
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <h4
+                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <i class="fa-solid fa-car"></i> Araç Bilgileri</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="input-group"><label>Plaka No</label><input type="text"
+                                                id="v_aracPlaka" class="uppercase font-bold text-red-700 bg-white"
+                                                placeholder="34 ABC 123"></div>
+                                        <div class="input-group"><label>Ruhsat Seri No</label><input type="text"
+                                                id="v_aracRuhsat" class="uppercase"></div>
+                                        <div class="input-group"><label>Marka / Model</label><input type="text"
+                                                id="v_aracMarkaModel"></div>
+                                        <div class="input-group"><label>Model Yılı</label><input type="number"
+                                                id="v_aracYil"></div>
+                                        <div class="input-group sm:col-span-2"><label>Şasi No</label><input type="text"
+                                                id="v_aracSasi" class="uppercase text-sm"></div>
+                                        <div class="input-group sm:col-span-2"><label>Motor No</label><input type="text"
+                                                id="v_aracMotor" class="uppercase text-sm"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Ruhsat Sahibi -->
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4
+                                            class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                            <i class="fa-solid fa-file-signature"></i> Ruhsat Sahibi</h4>
+                                        <label
+                                            class="flex items-center gap-2 text-xs font-medium cursor-pointer text-red-600 hover:text-red-800">
+                                            <input type="checkbox" id="v_ayniKisi"
+                                                class="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                                onchange="kopyalaSurucu('v')"> Sürücü ile aynı
+                                        </label>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="input-group sm:col-span-2"><label>Adı Soyadı</label><input
+                                                type="text" id="v_sahipAd"></div>
+                                        <div class="input-group"><label>TC Kimlik No</label><input type="number"
+                                                id="v_sahipTc"></div>
+                                        <div class="input-group"><label>Telefon</label><input type="tel"
+                                                id="v_sahipTel"></div>
+                                        <div class="input-group sm:col-span-2"><label>Doğum Tarihi</label><input
+                                                type="date" id="v_sahipDogum"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 4. Sigorta ve Eksper -->
+                    <div
+                        class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+                        <h3
+                            class="text-lg font-bold text-slate-800 flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <span
+                                class="bg-amber-100 text-amber-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
+                            Sigorta Bilgileri (Karşı Taraf)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                            <div class="input-group md:col-span-2">
+                                <label class="text-slate-500">Sigorta Şirketi Adı</label>
+                                <input type="text" id="sigortaSirketi" class="bg-slate-50">
+                            </div>
+                            <div class="input-group">
+                                <label class="text-slate-500">Poliçe No</label>
+                                <input type="text" id="policeNo" class="bg-slate-50">
+                            </div>
+                            <div class="input-group">
+                                <label class="text-slate-500 font-bold text-slate-700">Tahmini Hasar (₺)</label>
+                                <input type="text" id="hasarTutari" oninput="formatCurrencyInput(this)"
+                                    placeholder="0,00"
+                                    class="font-bold text-lg text-amber-700 bg-amber-50 border-amber-200 focus:border-amber-500 focus:ring-amber-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Ekspertiz (Sadece Düzenleme Modunda Görünür) -->
+                    <div id="ekspertizSection"
+                        class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden mt-6">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
+                        <h3
+                            class="text-lg font-bold text-slate-800 flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <span
+                                class="bg-purple-100 text-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">5</span>
+                            Ekspertiz Bilgileri
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="input-group">
+                                <label class="text-slate-500">Eksper Şirketi / Adı Soyadı</label>
+                                <input type="text" id="eksperAd" class="bg-slate-50">
+                            </div>
+                            <div class="input-group">
+                                <label class="text-slate-500">Eksper Telefonu</label>
+                                <input type="tel" id="eksperTel" placeholder="5XX XXX XX XX" class="bg-slate-50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Araç Hasar Çizimi -->
+                    <div
+                        class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden mt-6">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+                        <h3
+                            class="text-lg font-bold text-slate-800 flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <span
+                                class="bg-red-100 text-red-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">6</span>
+                            Hasarlı Bölgeleri İşaretle (Mağdur Araç)
+                        </h3>
+
+                        <div class="flex flex-col items-center">
+                            <p class="text-sm text-gray-500 mb-6 text-center">Aracın hasarlı olan parçalarının üzerine
+                                tıklayarak kırmızıya boyayınız. Bu görsel rapora eklenecektir.</p>
+
+                            <svg id="carDiagramSvg" viewBox="0 0 400 500"
+                                class="mx-auto w-[340px] h-[400px] select-none drop-shadow-sm">
+                                <defs>
+                                    <style>
+                                        .car-part {
+                                            fill: #e5e7eb;
+                                            stroke: #9ca3af;
+                                            stroke-width: 3;
+                                            cursor: pointer;
+                                            transition: all 0.2s ease-in-out;
+                                        }
+
+                                        .car-part:hover {
+                                            fill: #d1d5db;
+                                        }
+
+                                        g.damaged .car-part {
+                                            fill: #ef4444 !important;
+                                            stroke: #b91c1c !important;
+                                        }
+
+                                        .car-text {
+                                            font-family: sans-serif;
+                                            font-size: 11px;
+                                            font-weight: bold;
+                                            fill: #6b7280;
+                                            pointer-events: none;
+                                        }
+
+                                        g.damaged .car-text {
+                                            fill: white !important;
+                                        }
+
+                                        .car-glass {
+                                            fill: #ffffff;
+                                            stroke: #9ca3af;
+                                            stroke-width: 2;
+                                            pointer-events: none;
+                                        }
+                                    </style>
+                                </defs>
+
+                                <!-- Wheels -->
+                                <circle cx="85" cy="140" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+                                <circle cx="85" cy="380" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+                                <circle cx="315" cy="140" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+                                <circle cx="315" cy="380" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+
+                                <!-- CENTER BODY -->
+                                <g id="car-kaput" onclick="toggleDamage('car-kaput')">
+                                    <path class="car-part" d="M 155 80 Q 200 75 245 80 L 255 170 Q 200 180 145 170 Z" />
+                                </g>
+                                <path class="car-glass" d="M 148 175 Q 200 185 252 175 L 246 215 Q 200 205 154 215 Z" />
+                                <g id="car-tavan" onclick="toggleDamage('car-tavan')">
+                                    <path class="car-part"
+                                        d="M 154 220 Q 200 210 246 220 L 246 315 Q 200 325 154 315 Z" />
+                                </g>
+                                <path class="car-glass" d="M 152 320 Q 200 330 248 320 L 253 355 Q 200 345 147 355 Z" />
+                                <g id="car-bagaj" onclick="toggleDamage('car-bagaj')">
+                                    <path class="car-part"
+                                        d="M 145 360 Q 200 350 255 360 L 245 420 Q 200 430 155 420 Z" />
+                                </g>
+
+                                <!-- BUMPERS -->
+                                <g id="car-on-tampon" onclick="toggleDamage('car-on-tampon')">
+                                    <path class="car-part" d="M 160 30 Q 200 25 240 30 L 245 50 Q 200 60 155 50 Z" />
+                                    <rect x="165" y="35" width="20" height="10" rx="3" fill="#ffffff"
+                                        pointer-events="none" />
+                                    <rect x="215" y="35" width="20" height="10" rx="3" fill="#ffffff"
+                                        pointer-events="none" />
+                                    <text x="200" y="45" text-anchor="middle" class="car-text"
+                                        style="font-size: 9px;">ÖN</text>
+                                </g>
+                                <g id="car-arka-tampon" onclick="toggleDamage('car-arka-tampon')">
+                                    <path class="car-part"
+                                        d="M 155 440 Q 200 450 245 440 L 240 460 Q 200 465 160 460 Z" />
+                                    <rect x="165" y="445" width="20" height="10" rx="3" fill="#ffffff"
+                                        pointer-events="none" />
+                                    <rect x="215" y="445" width="20" height="10" rx="3" fill="#ffffff"
+                                        pointer-events="none" />
+                                    <text x="200" y="455" text-anchor="middle" class="car-text"
+                                        style="font-size: 9px;">ARKA</text>
+                                </g>
+
+                                <!-- LEFT SIDE -->
+                                <g id="car-sol-on-camurluk" onclick="toggleDamage('car-sol-on-camurluk')">
+                                    <path class="car-part" d="M 145 80 L 105 80 Q 90 120 85 165 L 138 170 Z" />
+                                </g>
+                                <g id="car-sol-on-kapi" onclick="toggleDamage('car-sol-on-kapi')">
+                                    <path class="car-part" d="M 136 175 L 82 170 Q 70 215 65 265 L 143 265 Z" />
+                                    <path class="car-glass" d="M 130 185 L 88 181 Q 80 220 78 255 L 135 255 Z" />
+                                </g>
+                                <g id="car-sol-arka-kapi" onclick="toggleDamage('car-sol-arka-kapi')">
+                                    <path class="car-part" d="M 143 270 L 65 270 Q 70 315 82 345 L 141 350 Z" />
+                                    <path class="car-glass" d="M 135 280 L 78 280 Q 80 315 88 335 L 133 340 Z" />
+                                </g>
+                                <g id="car-sol-arka-camurluk" onclick="toggleDamage('car-sol-arka-camurluk')">
+                                    <path class="car-part" d="M 139 355 L 85 355 Q 90 390 105 410 L 148 410 Z" />
+                                </g>
+
+                                <!-- RIGHT SIDE -->
+                                <g id="car-sag-on-camurluk" onclick="toggleDamage('car-sag-on-camurluk')">
+                                    <path class="car-part" d="M 255 80 L 295 80 Q 310 120 315 165 L 262 170 Z" />
+                                </g>
+                                <g id="car-sag-on-kapi" onclick="toggleDamage('car-sag-on-kapi')">
+                                    <path class="car-part" d="M 264 175 L 318 170 Q 330 215 335 265 L 257 265 Z" />
+                                    <path class="car-glass" d="M 270 185 L 312 181 Q 320 220 322 255 L 265 255 Z" />
+                                </g>
+                                <g id="car-sag-arka-kapi" onclick="toggleDamage('car-sag-arka-kapi')">
+                                    <path class="car-part" d="M 257 270 L 335 270 Q 330 315 318 345 L 259 350 Z" />
+                                    <path class="car-glass" d="M 265 280 L 322 280 Q 320 315 312 335 L 267 340 Z" />
+                                </g>
+                                <g id="car-sag-arka-camurluk" onclick="toggleDamage('car-sag-arka-camurluk')">
+                                    <path class="car-part" d="M 261 355 L 315 355 Q 310 390 295 410 L 252 410 Z" />
+                                </g>
+                            </svg>
+
+                            <input type="hidden" id="hasarliParcalar" value="[]">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-4 pt-4 border-t border-slate-200">
+                        <button type="button" onclick="saveDocument()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-3 text-lg">
+                            <i class="fa-solid fa-save text-xl"></i> Dosyayı Kaydet
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- LIST VIEW -->
+            <div id="view-list" class="max-w-6xl mx-auto hidden fade-in">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Kayıtlı Dosyalar</h2>
+                        <p class="text-gray-500 text-sm">Bilgisayarına kaydedilen tüm hasar dosyaları.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="exportAllRecords()"
+                            class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> Tümünü Yedekle
+                        </button>
+                        <input type="file" id="fileUpload" accept=".json" class="hidden"
+                            onchange="handleFileUpload(event)">
+                        <button onclick="document.getElementById('fileUpload').click()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-file-import"></i> Dışarıdan Yükle
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dashboard & Search -->
+                <!-- Dashboard & Search -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-folder-open"></i></div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Toplam Dosya</p>
+                            <h4 id="dashTotalRecords" class="text-2xl font-bold text-gray-800 mt-0.5">0</h4>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                        <div
+                            class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-50 rounded-full blur-2xl opacity-60 transition-colors">
+                        </div>
+                        <div class="flex items-center justify-between relative z-10 w-full mb-3">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg shrink-0 shadow-sm">
+                                    <i class="fa-solid fa-turkish-lira-sign"></i></div>
+                                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Toplam Hasar</p>
+                            </div>
+                            <div
+                                class="flex bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden text-xs font-semibold focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
+                                <select id="dashYearFilter" onchange="renderTable()"
+                                    class="bg-transparent text-gray-600 focus:outline-none cursor-pointer py-1.5 pl-2 pr-6 border-r border-gray-200 hover:bg-gray-50 transition-colors">
+                                    <option value="all">Tüm Yıllar</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                    <option value="2029">2029</option>
+                                    <option value="2030">2030</option>
+                                </select>
+                                <select id="dashMonthFilter" onchange="renderTable()"
+                                    class="bg-transparent text-gray-600 focus:outline-none cursor-pointer py-1.5 pl-2 pr-6 hover:bg-gray-50 transition-colors">
+                                    <option value="all">Tüm Aylar</option>
+                                    <option value="0">Ocak</option>
+                                    <option value="1">Şubat</option>
+                                    <option value="2">Mart</option>
+                                    <option value="3">Nisan</option>
+                                    <option value="4">Mayıs</option>
+                                    <option value="5">Haziran</option>
+                                    <option value="6">Temmuz</option>
+                                    <option value="7">Ağustos</option>
+                                    <option value="8">Eylül</option>
+                                    <option value="9">Ekim</option>
+                                    <option value="10">Kasım</option>
+                                    <option value="11">Aralık</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="relative z-10">
+                            <h4 id="dashTotalAmount" class="text-3xl font-extrabold text-gray-800 tracking-tight">0 ₺
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                        <p
+                            class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-building-shield text-purple-500"></i> Sigorta Dağılımı</p>
+                        <div id="dashSigortaList" class="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                            <!-- JS will populate -->
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                        <p
+                            class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-user-tie text-orange-500"></i> Eksper Dağılımı</p>
+                        <div id="dashEksperList" class="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                            <!-- JS will populate -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Box -->
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm mb-6 flex items-center">
+                    <div class="relative w-full">
+                        <i
+                            class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" oninput="renderTable()"
+                            placeholder="Kayıtlar arasında hızlıca Plaka, İsim veya Dosya No ara..."
+                            class="w-full pl-12 pr-4 py-3.5 bg-transparent border-none rounded-xl text-sm focus:outline-none focus:ring-0 transition-all text-gray-700 placeholder-gray-400">
+                    </div>
+                </div>
+
+                <!-- Bulk Action Bar -->
+                <div id="bulkActionBar"
+                    class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-4 flex justify-between items-center transition-all">
+                    <span class="text-indigo-800 font-medium text-sm ml-2"><span id="selectedCount">0</span> dosya
+                        seçildi</span>
+                    <div class="flex gap-2">
+                        <button onclick="bulkDelete()"
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors shadow-sm text-sm flex items-center gap-2"><i
+                                class="fa-solid fa-trash"></i> Seçilenleri Sil</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-sm border-b">
+                                    <th class="p-4 w-12"><input type="checkbox" id="selectAllCheckbox"
+                                            onchange="toggleSelectAll()"
+                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4">
+                                    </th>
+                                    <th class="p-4 font-semibold">Tarih</th>
+                                    <th class="p-4 font-semibold">Dosya No</th>
+                                    <th class="p-4 font-semibold">Mağdur Adı</th>
+                                    <th class="p-4 font-semibold">Mağdur Plaka</th>
+                                    <th class="p-4 font-semibold">Vuran Plaka</th>
+                                    <th class="p-4 font-semibold">Hasar Tutarı</th>
+                                    <th class="p-4 font-semibold text-right">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="text-sm">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="emptyState" class="hidden p-8 text-center text-gray-500">
+                        <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                        <p class="mb-4">Henüz kaydedilmiş bir dosya bulunmuyor.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Toast Component -->
+    <div id="toast"><i class="fa-solid fa-check-circle mr-2"></i><span id="toastMsg">Kayıt Başarılı!</span></div>
+
+    <!-- Modal for Viewing Details -->
+    <div id="detailsModal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-bold">Dosya Detayı</h3>
+                <div class="flex gap-2 items-center">
+                    <button id="btnPrintRecord"
+                        class="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded transition-colors text-sm font-medium"><i
+                            class="fa-solid fa-print"></i> PDF Yazdır</button>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-red-500 ml-2"><i
+                            class="fa-solid fa-times text-xl"></i></button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 text-sm" id="modalContent">
+                <!-- Content generated via JS -->
+            </div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end">
+                <button onclick="closeModal()"
+                    class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal Custom Modal -->
+    <div id="customModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div id="customModalContent"
+            class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transform transition-all scale-95 opacity-0 duration-200">
+            <div class="p-6 text-center">
+                <div id="customModalIconBg"
+                    class="w-16 h-16 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4">
+                    <i id="customModalIcon" class="fa-solid fa-trash-can text-3xl"></i>
+                </div>
+                <h3 id="customModalTitle" class="text-xl font-bold text-gray-800 mb-2">Uyarı</h3>
+                <p id="customModalText" class="text-sm text-gray-500">Bu işlem geri alınamaz.</p>
+            </div>
+            <div class="flex bg-gray-50/80 border-t p-4 gap-3">
+                <button id="customModalCancel"
+                    class="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition-colors">İptal</button>
+                <button id="customModalConfirm"
+                    class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors shadow-sm">Evet,
+                    Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CUSTOM MODAL Lojik ---
+        let customModalCallback = null;
+
+        function showCustomModal(options) {
+            const modal = document.getElementById('customModal');
+            const content = document.getElementById('customModalContent');
+
+            document.getElementById('customModalTitle').innerText = options.title || 'Uyarı';
+            document.getElementById('customModalText').innerText = options.message || '';
+
+            const iconBg = document.getElementById('customModalIconBg');
+            const icon = document.getElementById('customModalIcon');
+            const confirmBtn = document.getElementById('customModalConfirm');
+            const cancelBtn = document.getElementById('customModalCancel');
+
+            if (options.type === 'danger') {
+                iconBg.className = 'w-16 h-16 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4';
+                icon.className = 'fa-solid fa-trash-can text-3xl';
+                confirmBtn.className = 'flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors shadow-sm';
+            } else if (options.type === 'warning') {
+                iconBg.className = 'w-16 h-16 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center mx-auto mb-4';
+                icon.className = 'fa-solid fa-triangle-exclamation text-3xl';
+                confirmBtn.className = 'flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors shadow-sm';
+            } else {
+                iconBg.className = 'w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mx-auto mb-4';
+                icon.className = 'fa-solid fa-circle-info text-3xl';
+                confirmBtn.className = 'flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors shadow-sm';
+            }
+
+            confirmBtn.innerText = options.confirmText || 'Tamam';
+
+            if (options.showCancel === false) {
+                cancelBtn.classList.add('hidden');
+            } else {
+                cancelBtn.classList.remove('hidden');
+                cancelBtn.innerText = options.cancelText || 'İptal';
+            }
+
+            customModalCallback = options.onConfirm || null;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeCustomModal() {
+            const modal = document.getElementById('customModal');
+            const content = document.getElementById('customModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                customModalCallback = null;
+            }, 200);
+        }
+
+        document.getElementById('customModalCancel').addEventListener('click', closeCustomModal);
+        document.getElementById('customModalConfirm').addEventListener('click', () => {
+            if (customModalCallback) customModalCallback();
+            closeCustomModal();
+        });
+
+        // Örnek dosyaları manuel yükleme fonksiyonu
+        function loadSampleData() {
+            const ornekDosyalar = [
+                {
+                    "id": "ornek-1",
+                    "createdAt": new Date().toISOString(),
+                    "genel": { "tarih": "2026-06-13", "saat": "14:30", "il": "İstanbul", "ilce": "Kadıköy", "dosyaNo": "HS-2026-001" },
+                    "magdur": { "surucuAd": "Ahmet Yılmaz", "surucuTc": "11111111111", "surucuTel": "532 123 45 67", "surucuDogum": "1985-04-12", "plaka": "34 ABC 123", "ruhsat": "AB123456", "markaModel": "Renault Megane", "yil": "2020", "sasi": "VF123456789012345", "motor": "K9K7890123", "sahipAd": "Ahmet Yılmaz", "sahipTc": "11111111111", "sahipTel": "532 123 45 67", "sahipDogum": "1985-04-12" },
+                    "vuran": { "surucuAd": "Mehmet Demir", "surucuTc": "22222222222", "surucuTel": "555 987 65 43", "surucuDogum": "1990-08-25", "plaka": "06 XYZ 987", "ruhsat": "CD987654", "markaModel": "Fiat Egea", "yil": "2022", "sasi": "ZFA12345678901234", "motor": "199A3000", "sahipAd": "Mehmet Demir", "sahipTc": "22222222222", "sahipTel": "555 987 65 43", "sahipDogum": "1990-08-25" },
+                    "sigorta": { "sirket": "Anadolu Sigorta", "policeNo": "POL-99887766", "tutar": "15000", "eksperSirketi": "Güven Ekspertiz", "eksperTel": "544 444 44 44" }
+                },
+                {
+                    "id": "ornek-2",
+                    "createdAt": new Date().toISOString(),
+                    "genel": { "tarih": "2026-06-12", "saat": "09:15", "il": "Ankara", "ilce": "Çankaya", "dosyaNo": "HS-2026-002" },
+                    "magdur": { "surucuAd": "Ayşe Kaya", "surucuTc": "33333333333", "surucuTel": "505 111 22 33", "surucuDogum": "1992-11-05", "plaka": "06 ABC 06", "ruhsat": "ZZ112233", "markaModel": "Honda Civic", "yil": "2021", "sasi": "NLU12345678901234", "motor": "R18A1", "sahipAd": "Ayşe Kaya", "sahipTc": "33333333333", "sahipTel": "505 111 22 33", "sahipDogum": "1992-11-05" },
+                    "vuran": { "surucuAd": "Can Yurt", "surucuTc": "44444444444", "surucuTel": "530 999 88 77", "surucuDogum": "1988-02-18", "plaka": "35 IZM 35", "ruhsat": "AA998877", "markaModel": "Ford Focus", "yil": "2019", "sasi": "WF012345678901234", "motor": "T1DB1", "sahipAd": "Can Yurt", "sahipTc": "44444444444", "sahipTel": "530 999 88 77", "sahipDogum": "1988-02-18" },
+                    "sigorta": { "sirket": "Axa Sigorta", "policeNo": "AXA-11223344", "tutar": "8500", "eksperSirketi": "Net Ekspertiz", "eksperTel": "532 555 66 77" }
+                },
+                {
+                    "id": "ornek-3",
+                    "createdAt": new Date().toISOString(),
+                    "genel": { "tarih": "2026-06-10", "saat": "18:45", "il": "İzmir", "ilce": "Bornova", "dosyaNo": "HS-2026-003" },
+                    "magdur": { "surucuAd": "Fatma Şahin", "surucuTc": "55555555555", "surucuTel": "542 222 33 44", "surucuDogum": "1975-06-30", "plaka": "35 DEF 456", "ruhsat": "XY334455", "markaModel": "Toyota Corolla", "yil": "2018", "sasi": "JTD12345678901234", "motor": "1ZRFE", "sahipAd": "Fatma Şahin", "sahipTc": "55555555555", "sahipTel": "542 222 33 44", "sahipDogum": "1975-06-30" },
+                    "vuran": { "surucuAd": "Burak Can", "surucuTc": "66666666666", "surucuTel": "533 444 55 66", "surucuDogum": "1995-12-10", "plaka": "34 KMN 789", "ruhsat": "YZ667788", "markaModel": "Volkswagen Golf", "yil": "2023", "sasi": "WVW12345678901234", "motor": "DACA123", "sahipAd": "Burak Can", "sahipTc": "66666666666", "sahipTel": "533 444 55 66", "sahipDogum": "1995-12-10" },
+                    "sigorta": { "sirket": "Allianz Sigorta", "policeNo": "ALZ-55667788", "tutar": "32000.50", "eksperSirketi": "Güven Ekspertiz", "eksperTel": "544 444 44 44" }
+                },
+                {
+                    "id": "ornek-4",
+                    "createdAt": new Date().toISOString(),
+                    "genel": { "tarih": "2026-06-08", "saat": "08:20", "il": "Bursa", "ilce": "Nilüfer", "dosyaNo": "HS-2026-004" },
+                    "magdur": { "surucuAd": "Emre Çelik", "surucuTc": "77777777777", "surucuTel": "507 888 99 00", "surucuDogum": "1982-03-22", "plaka": "16 GHI 789", "ruhsat": "KL990011", "markaModel": "Hyundai i20", "yil": "2017", "sasi": "NLH12345678901234", "motor": "G4LA", "sahipAd": "Emre Çelik", "sahipTc": "77777777777", "sahipTel": "507 888 99 00", "sahipDogum": "1982-03-22" },
+                    "vuran": { "surucuAd": "Ceren Yıldız", "surucuTc": "88888888888", "surucuTel": "544 777 66 55", "surucuDogum": "1998-09-14", "plaka": "34 PRT 321", "ruhsat": "MN223344", "markaModel": "Peugeot 208", "yil": "2020", "sasi": "VF312345678901234", "motor": "EB2FA", "sahipAd": "Ceren Yıldız", "sahipTc": "88888888888", "sahipTel": "544 777 66 55", "sahipDogum": "1998-09-14" },
+                    "sigorta": { "sirket": "Anadolu Sigorta", "policeNo": "POL-11223344", "tutar": "4500", "eksperSirketi": "Doğru Ekspertiz", "eksperTel": "505 555 44 33" }
+                },
+                {
+                    "id": "ornek-5",
+                    "createdAt": new Date().toISOString(),
+                    "genel": { "tarih": "2026-06-05", "saat": "21:00", "il": "Antalya", "ilce": "Muratpaşa", "dosyaNo": "HS-2026-005" },
+                    "magdur": { "surucuAd": "Osman Arslan", "surucuTc": "99999999999", "surucuTel": "532 555 11 22", "surucuDogum": "1968-01-08", "plaka": "07 XYZ 07", "ruhsat": "OP445566", "markaModel": "Dacia Duster", "yil": "2015", "sasi": "UU112345678901234", "motor": "K9K896", "sahipAd": "Osman Arslan", "sahipTc": "99999999999", "sahipTel": "532 555 11 22", "sahipDogum": "1968-01-08" },
+                    "vuran": { "surucuAd": "Elif Tekin", "surucuTc": "10101010101", "surucuTel": "535 444 33 22", "surucuDogum": "1993-05-19", "plaka": "06 DEF 06", "ruhsat": "RS778899", "markaModel": "Opel Corsa", "yil": "2021", "sasi": "W0L12345678901234", "motor": "B14XER", "sahipAd": "Elif Tekin", "sahipTc": "10101010101", "sahipTel": "535 444 33 22", "sahipDogum": "1993-05-19" },
+                    "sigorta": { "sirket": "Axa Sigorta", "policeNo": "AXA-99887766", "tutar": "12750", "eksperSirketi": "Net Ekspertiz", "eksperTel": "532 555 66 77" }
+                }
+            ];
+
+            let currentRecords = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            ornekDosyalar.forEach(ornek => {
+                if (!currentRecords.some(r => r.id === ornek.id)) {
+                    currentRecords.push(ornek);
+                }
+            });
+
+            localStorage.setItem(DB_KEY, JSON.stringify(currentRecords));
+            localStorage.setItem('hasar_sistemi_initialized', 'true');
+            renderTable();
+            showToast('Örnek dosyalar başarıyla yüklendi!');
+        }
+
+        // Veritabanı (Tarayıcı LocalStorage)
+        const DB_KEY = 'hasar_sistemi_kayitlari';
+        let currentEditId = null;
+
+        // Uygulama yüklendiğinde
+        document.addEventListener('DOMContentLoaded', () => {
+            // Örnek dosyalar yükle (eğer hiç kayıt yoksa ve ilk girişse)
+            let records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            const isInitialized = localStorage.getItem('hasar_sistemi_initialized');
+            if (records.length === 0 && !isInitialized) {
+                loadSampleData();
+            } else if (!isInitialized) {
+                localStorage.setItem('hasar_sistemi_initialized', 'true');
+            }
+
+            renderTable();
+
+            // Bugünün tarihini varsayılan yap
+            document.getElementById('kazaTarihi').valueAsDate = new Date();
+
+            setupFormatters();
+        });
+
+        function setupFormatters() {
+            // Telefon Formatlama (*** *** ** **)
+            const phoneInputs = ['m_surucuTel', 'm_sahipTel', 'v_surucuTel', 'v_sahipTel', 'eksperTel'];
+            phoneInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function (e) {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.startsWith('0')) val = val.substring(1);
+                        val = val.substring(0, 10);
+                        let match = val.match(/^(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})$/);
+                        if (match) {
+                            e.target.value = !match[2] ? match[1] : match[1] + ' ' + match[2] + (match[3] ? ' ' + match[3] : '') + (match[4] ? ' ' + match[4] : '');
+                        }
+                    });
+                }
+            });
+
+            // TC Kimlik Formatlama (11 hane sadece rakam)
+            const tcInputs = ['m_surucuTc', 'm_sahipTc', 'v_surucuTc', 'v_sahipTc'];
+            tcInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function (e) {
+                        e.target.value = e.target.value.replace(/\D/g, '').substring(0, 11);
+                    });
+                }
+            });
+
+            // Ruhsat Formatlama (İlk 2 harf, sonra 6 rakam)
+            const ruhsatInputs = ['m_aracRuhsat', 'v_aracRuhsat'];
+            ruhsatInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function (e) {
+                        let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        let result = '';
+                        for (let i = 0; i < val.length; i++) {
+                            if (i < 2) {
+                                if (/[A-Z]/.test(val[i])) result += val[i];
+                            } else {
+                                if (/\d/.test(val[i])) result += val[i];
+                            }
+                        }
+                        e.target.value = result.substring(0, 8);
+                    });
+                }
+            });
+
+            // Şasi Formatlama (17 hane, sadece harf ve rakam)
+            const sasiInputs = ['m_aracSasi', 'v_aracSasi'];
+            sasiInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function (e) {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 17);
+                    });
+                }
+            });
+
+            // Plaka Formatlama (Boşluksuz ve Büyük Harf)
+            const plakaInputs = ['m_aracPlaka', 'v_aracPlaka'];
+            plakaInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function (e) {
+                        e.target.value = e.target.value.toUpperCase().replace(/\s+/g, '');
+                    });
+                }
+            });
+
+            // Sürücü bilgileri değiştiğinde "Aynı" işaretliyse Ruhsat Sahibi'ni de anlık güncelle
+            ['m', 'v'].forEach(prefix => {
+                ['surucuAd', 'surucuTc', 'surucuTel', 'surucuDogum'].forEach(field => {
+                    const el = document.getElementById(prefix + '_' + field);
+                    if (el) {
+                        el.addEventListener('input', () => {
+                            if (document.getElementById(prefix + '_ayniKisi') && document.getElementById(prefix + '_ayniKisi').checked) {
+                                document.getElementById(prefix + '_sahipAd').value = document.getElementById(prefix + '_surucuAd').value;
+                                document.getElementById(prefix + '_sahipTc').value = document.getElementById(prefix + '_surucuTc').value;
+                                document.getElementById(prefix + '_sahipTel').value = document.getElementById(prefix + '_surucuTel').value;
+                                document.getElementById(prefix + '_sahipDogum').value = document.getElementById(prefix + '_surucuDogum').value;
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Plaka Otomatik Tamamlama
+            ['m_aracPlaka', 'v_aracPlaka'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('blur', function () {
+                        const plaka = this.value.trim().toUpperCase();
+                        if (plaka.length < 5) return;
+
+                        const prefix = id.split('_')[0]; // 'm' or 'v'
+                        const records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+
+                        // En güncel kaydı bulalım
+                        let foundMatch = null;
+
+                        // Geçmiş kayıtlara tersten bakalım (en yeni kayıtlar sonda olduğu için reverse yapalım)
+                        const reversedRecords = [...records].reverse();
+
+                        for (const rec of reversedRecords) {
+                            if (rec.magdur && rec.magdur.plaka && rec.magdur.plaka.toUpperCase().replace(/\s+/g, '') === plaka) {
+                                foundMatch = rec.magdur;
+                                break;
+                            }
+                            if (rec.vuran && rec.vuran.plaka && rec.vuran.plaka.toUpperCase().replace(/\s+/g, '') === plaka) {
+                                foundMatch = rec.vuran;
+                                break;
+                            }
+                        }
+
+                        if (foundMatch) {
+                            showCustomModal({
+                                title: 'Plaka Geçmişte Bulundu',
+                                message: `<b>${plaka}</b> plakalı araç daha önce sisteme kaydedilmiş. Eski bilgileri (Sürücü, Araç vb.) bu alana otomatik doldurmak ister misiniz?`,
+                                type: 'info',
+                                confirmText: 'Evet, Doldur',
+                                onConfirm: () => {
+                                    document.getElementById(prefix + '_surucuAd').value = foundMatch.surucuAd || '';
+                                    document.getElementById(prefix + '_surucuTc').value = foundMatch.surucuTc || '';
+                                    document.getElementById(prefix + '_surucuTel').value = foundMatch.surucuTel || '';
+                                    document.getElementById(prefix + '_surucuDogum').value = foundMatch.surucuDogum || '';
+                                    document.getElementById(prefix + '_aracRuhsat').value = foundMatch.ruhsat || '';
+                                    document.getElementById(prefix + '_aracMarkaModel').value = foundMatch.markaModel || '';
+                                    document.getElementById(prefix + '_aracYil').value = foundMatch.yil || '';
+                                    document.getElementById(prefix + '_aracSasi').value = foundMatch.sasi || '';
+                                    document.getElementById(prefix + '_aracMotor').value = foundMatch.motor || '';
+                                    document.getElementById(prefix + '_sahipAd').value = foundMatch.sahipAd || '';
+                                    document.getElementById(prefix + '_sahipTc').value = foundMatch.sahipTc || '';
+                                    document.getElementById(prefix + '_sahipTel').value = foundMatch.sahipTel || '';
+                                    document.getElementById(prefix + '_sahipDogum').value = foundMatch.sahipDogum || '';
+                                    showToast('Bilgiler başarıyla dolduruldu!', '#3B82F6');
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        // Sekme Değiştirme
+        function switchTab(tab) {
+            document.getElementById('view-form').classList.add('hidden');
+            document.getElementById('view-list').classList.add('hidden');
+
+            document.getElementById('btn-nav-form').classList.remove('bg-blue-600', 'hover:bg-slate-800');
+            document.getElementById('btn-nav-form').classList.add('hover:bg-slate-800');
+            document.getElementById('btn-nav-list').classList.remove('bg-blue-600', 'hover:bg-slate-800');
+            document.getElementById('btn-nav-list').classList.add('hover:bg-slate-800');
+
+            if (tab === 'form') {
+                document.getElementById('view-form').classList.remove('hidden');
+                document.getElementById('btn-nav-form').classList.add('bg-blue-600');
+                document.getElementById('btn-nav-form').classList.remove('hover:bg-slate-800');
+
+                // Form sekmesine manuel geçilirse yeni kayıt moduna geç
+                if (currentEditId === null) {
+                    document.getElementById('hasarForm').reset();
+                    document.getElementById('kazaTarihi').valueAsDate = new Date();
+                    document.getElementById('ekspertizSection').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('btn-nav-list').classList.add('bg-blue-600');
+                document.getElementById('btn-nav-list').classList.remove('hover:bg-slate-800');
+                renderTable();
+            }
+        }
+
+        function formatCurrencyInput(input) {
+            let value = input.value.replace(/[^0-9,]/g, '');
+            let parts = value.split(',');
+            if (parts.length > 2) parts = [parts[0], parts.slice(1).join('')];
+            let integerPart = parts[0];
+            if (integerPart) integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            let decimalPart = parts.length > 1 ? ',' + parts[1].slice(0, 2) : '';
+            input.value = integerPart + decimalPart;
+        }
+
+        // Veriyi Kaydetme
+        async function saveDocument() {
+            // Basit doğrulama (Sadece plaka ve tarih zorunlu olsun akıcılık için)
+            const kazaTarihi = document.getElementById('kazaTarihi').value;
+            if (!kazaTarihi) {
+                showToast('Kaza Tarihi zorunludur!', 'red');
+                return;
+            }
+
+            const newRecord = {
+                id: Date.now().toString(),
+                createdAt: new Date().toISOString(),
+                genel: {
+                    tarih: kazaTarihi,
+                    saat: document.getElementById('kazaSaati').value,
+                    il: document.getElementById('il').value,
+                    ilce: document.getElementById('ilce').value,
+                    dosyaNo: document.getElementById('dosyaNo').value,
+                    hasarliParcalar: JSON.parse(document.getElementById('hasarliParcalar')?.value || '[]')
+                },
+                magdur: {
+                    surucuAd: document.getElementById('m_surucuAd').value,
+                    surucuTc: document.getElementById('m_surucuTc').value,
+                    surucuTel: document.getElementById('m_surucuTel').value,
+                    surucuDogum: document.getElementById('m_surucuDogum').value,
+                    plaka: document.getElementById('m_aracPlaka').value,
+                    ruhsat: document.getElementById('m_aracRuhsat').value,
+                    markaModel: document.getElementById('m_aracMarkaModel').value,
+                    yil: document.getElementById('m_aracYil').value,
+                    sasi: document.getElementById('m_aracSasi').value,
+                    motor: document.getElementById('m_aracMotor').value,
+                    sahipAd: document.getElementById('m_sahipAd').value,
+                    sahipTc: document.getElementById('m_sahipTc').value,
+                    sahipTel: document.getElementById('m_sahipTel').value,
+                    sahipDogum: document.getElementById('m_sahipDogum').value,
+                },
+                vuran: {
+                    surucuAd: document.getElementById('v_surucuAd').value,
+                    surucuTc: document.getElementById('v_surucuTc').value,
+                    surucuTel: document.getElementById('v_surucuTel').value,
+                    surucuDogum: document.getElementById('v_surucuDogum').value,
+                    plaka: document.getElementById('v_aracPlaka').value,
+                    ruhsat: document.getElementById('v_aracRuhsat').value,
+                    markaModel: document.getElementById('v_aracMarkaModel').value,
+                    yil: document.getElementById('v_aracYil').value,
+                    sasi: document.getElementById('v_aracSasi').value,
+                    motor: document.getElementById('v_aracMotor').value,
+                    sahipAd: document.getElementById('v_sahipAd').value,
+                    sahipTc: document.getElementById('v_sahipTc').value,
+                    sahipTel: document.getElementById('v_sahipTel').value,
+                    sahipDogum: document.getElementById('v_sahipDogum').value,
+                },
+                sigorta: {
+                    sirket: document.getElementById('sigortaSirketi').value,
+                    policeNo: document.getElementById('policeNo').value,
+                    tutar: document.getElementById('hasarTutari').value.replace(/\./g, '').replace(',', '.'),
+                    eksperSirketi: document.getElementById('eksperAd') ? document.getElementById('eksperAd').value : '',
+                    eksperTel: document.getElementById('eksperTel') ? document.getElementById('eksperTel').value : '',
+                }
+            };
+
+            let records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+
+            if (currentEditId !== null) {
+                // Güncelleme Modu
+                const index = records.findIndex(r => r.id === currentEditId);
+                if (index !== -1) {
+                    newRecord.id = currentEditId;
+                    newRecord.createdAt = records[index].createdAt; // Orjinal tarihi koru
+                    records[index] = newRecord;
+                    localStorage.setItem(DB_KEY, JSON.stringify(records));
+                    showToast('Kayıt başarıyla güncellendi!', '#10B981');
+
+                    // Formu sıfırla ve listeye dön
+                    currentEditId = null;
+                    document.getElementById('hasarForm').reset();
+                    document.getElementById('kazaTarihi').valueAsDate = new Date();
+                    document.getElementById('ekspertizSection').classList.add('hidden');
+                    switchTab('list');
+                }
+            } else {
+                // Yeni Kayıt Modu (Otomatik json indirme kaldırıldı)
+                records.unshift(newRecord);
+                localStorage.setItem(DB_KEY, JSON.stringify(records));
+                showToast('Dosya başarıyla kaydedildi!', '#10B981');
+                document.getElementById('hasarForm').reset();
+                document.getElementById('kazaTarihi').valueAsDate = new Date();
+                switchTab('list');
+            }
+        }
+
+        // Tüm Dosyaları JSON olarak Dışa Aktar (Yedekle)
+        function exportAllRecords() {
+            const records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            if (records.length === 0) {
+                showToast('Dışa aktarılacak kayıt bulunamadı!', 'red');
+                return;
+            }
+            const jsonStr = JSON.stringify(records, null, 2);
+            const dosyaAdi = `hasar_sistemi_yedek_${new Date().toISOString().split('T')[0]}.json`;
+            fallbackDownload(jsonStr, dosyaAdi);
+        }
+
+        function fallbackDownload(content, filename) {
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Tabloyu Oluşturma
+        function renderTable() {
+            const allRecords = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            const searchTerm = (document.getElementById('searchInput')?.value || '').toLowerCase();
+
+            const yearFilter = document.getElementById('dashYearFilter')?.value || 'all';
+            const monthFilter = document.getElementById('dashMonthFilter')?.value || 'all';
+
+            // Filtreleme
+            const records = allRecords.filter(rec => {
+                const p1 = (rec.magdur?.plaka || '').toLowerCase();
+                const p2 = (rec.vuran?.plaka || '').toLowerCase();
+                const ad = (rec.magdur?.surucuAd || '').toLowerCase();
+                const dNo = (rec.genel?.dosyaNo || '').toLowerCase();
+                const matchesSearch = p1.includes(searchTerm) || p2.includes(searchTerm) || ad.includes(searchTerm) || dNo.includes(searchTerm);
+
+                let matchesDate = true;
+                if (rec.genel?.tarih) {
+                    const recDate = new Date(rec.genel.tarih);
+                    if (yearFilter !== 'all' && recDate.getFullYear() !== parseInt(yearFilter)) {
+                        matchesDate = false;
+                    }
+                    if (monthFilter !== 'all' && recDate.getMonth() !== parseInt(monthFilter)) {
+                        matchesDate = false;
+                    }
+                } else if (yearFilter !== 'all' || monthFilter !== 'all') {
+                    matchesDate = false;
+                }
+
+                return matchesSearch && matchesDate;
+            });
+
+            // Dashboard İstatistikleri Güncelle
+            let totalAmount = 0;
+            const sigortaCounts = {};
+            const eksperCounts = {};
+
+            records.forEach(r => {
+                if (r.sigorta?.tutar) {
+                    totalAmount += Number(r.sigorta.tutar);
+                }
+                if (r.sigorta?.sirket) {
+                    sigortaCounts[r.sigorta.sirket] = (sigortaCounts[r.sigorta.sirket] || 0) + 1;
+                }
+                if (r.sigorta?.eksperSirketi) {
+                    eksperCounts[r.sigorta.eksperSirketi] = (eksperCounts[r.sigorta.eksperSirketi] || 0) + 1;
+                }
+            });
+
+            const dashTotalRecords = document.getElementById('dashTotalRecords');
+            const dashTotalAmount = document.getElementById('dashTotalAmount');
+            const dashSigortaList = document.getElementById('dashSigortaList');
+            const dashEksperList = document.getElementById('dashEksperList');
+
+            if (dashTotalRecords) dashTotalRecords.innerText = records.length;
+            if (dashTotalAmount) dashTotalAmount.innerText = totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+
+            if (dashSigortaList) {
+                dashSigortaList.innerHTML = '';
+                const sortedSigorta = Object.entries(sigortaCounts).sort((a, b) => b[1] - a[1]);
+                if (sortedSigorta.length === 0) dashSigortaList.innerHTML = '<p class="text-sm text-gray-400">Veri yok</p>';
+                sortedSigorta.forEach(([sirket, count]) => {
+                    dashSigortaList.innerHTML += `<div class="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg"><span class="text-sm font-medium text-gray-700 truncate">${sirket}</span><span class="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded-full">${count}</span></div>`;
+                });
+            }
+
+            if (dashEksperList) {
+                dashEksperList.innerHTML = '';
+                const sortedEksper = Object.entries(eksperCounts).sort((a, b) => b[1] - a[1]);
+                if (sortedEksper.length === 0) dashEksperList.innerHTML = '<p class="text-sm text-gray-400">Veri yok</p>';
+                sortedEksper.forEach(([eksper, count]) => {
+                    dashEksperList.innerHTML += `<div class="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg"><span class="text-sm font-medium text-gray-700 truncate">${eksper}</span><span class="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full">${count}</span></div>`;
+                });
+            }
+
+            updateSelection(); // Bulk bar güncellemesi
+
+            tbody.innerHTML = '';
+
+            if (records.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                records.forEach(rec => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b hover:bg-gray-50 transition-colors';
+                    tr.innerHTML = `
+                        <td class="p-4"><input type="checkbox" class="row-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4" value="${rec.id}" onchange="updateSelection()"></td>
+                        <td class="p-4">${formatDate(rec.genel.tarih)}</td>
+                        <td class="p-4 font-medium">${rec.genel.dosyaNo || '-'}</td>
+                        <td class="p-4 font-medium">${rec.magdur.surucuAd || '-'}</td>
+                        <td class="p-4 text-green-600 font-semibold uppercase">${(rec.magdur.plaka || '-').replace(/\s+/g, '')}</td>
+                        <td class="p-4 text-red-600 font-semibold uppercase">${(rec.vuran.plaka || '-').replace(/\s+/g, '')}</td>
+                        <td class="p-4">${rec.sigorta.tutar ? Number(rec.sigorta.tutar).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺' : '-'}</td>
+                        <td class="p-4 text-right whitespace-nowrap">
+                            <button onclick="editRecord('${rec.id}')" class="text-amber-600 hover:text-amber-800 px-3 py-1 bg-amber-50 rounded text-xs font-semibold mr-1" title="Tümünü Düzenle"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="downloadJson('${rec.id}')" class="text-emerald-600 hover:text-emerald-800 px-3 py-1 bg-emerald-50 rounded text-xs font-semibold mr-1" title="JSON Olarak İndir"><i class="fa-solid fa-download"></i></button>
+                            <button onclick="viewDetails('${rec.id}')" class="text-blue-600 hover:text-blue-800 px-3 py-1 bg-blue-50 rounded text-xs font-semibold mr-1">Görüntüle</button>
+                            <button onclick="deleteRecord('${rec.id}')" class="text-red-600 hover:text-red-800 px-3 py-1 bg-red-50 rounded text-xs font-semibold"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Çoklu Seçim İşlemleri
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            const bulkBar = document.getElementById('bulkActionBar');
+            const countSpan = document.getElementById('selectedCount');
+
+            if (checkboxes.length > 0) {
+                countSpan.innerText = checkboxes.length;
+                bulkBar.classList.remove('hidden');
+            } else {
+                bulkBar.classList.add('hidden');
+                const selectAll = document.getElementById('selectAllCheckbox');
+                if (selectAll) selectAll.checked = false;
+            }
+        }
+
+        function bulkDelete() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkboxes.length === 0) return;
+
+            showCustomModal({
+                title: 'Toplu Silme İşlemi',
+                message: `Seçilen ${checkboxes.length} adet dosyayı silmek istediğinize emin misiniz? Bu işlem kalıcıdır.`,
+                type: 'danger',
+                confirmText: 'Hepsini Sil',
+                onConfirm: () => {
+                    let records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+                    const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+                    records = records.filter(r => !idsToDelete.includes(r.id));
+                    localStorage.setItem(DB_KEY, JSON.stringify(records));
+
+                    showToast(`${idsToDelete.length} kayıt başarıyla silindi!`, '#EF4444');
+                    renderTable();
+                }
+            });
+        }
+
+        // Detay Görüntüleme
+        function viewDetails(id) {
+            const records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            const rec = records.find(r => r.id === id);
+            if (!rec) return;
+
+            const btnPrint = document.getElementById('btnPrintRecord');
+            if (btnPrint) btnPrint.onclick = () => printRecord(id);
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <!-- Üst Genel Bilgiler -->
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-5 mb-6 text-white shadow-md flex flex-wrap gap-6 items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                            <i class="fa-solid fa-car-burst text-blue-400 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Dosya Numarası</p>
+                            <p class="text-xl font-bold text-white tracking-wide">${rec.genel.dosyaNo || 'Atanmadı'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-8">
+                        <div>
+                            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1"><i class="fa-regular fa-calendar mr-1"></i> Tarih / Saat</p>
+                            <p class="font-medium">${formatDate(rec.genel.tarih)} <span class="text-slate-300 ml-1">${rec.genel.saat || ''}</span></p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1"><i class="fa-solid fa-location-dot mr-1"></i> Konum</p>
+                            <p class="font-medium">${rec.genel.il || '-'} <span class="text-slate-300">/ ${rec.genel.ilce || '-'}</span></p>
+                        </div>
+                        <div class="bg-slate-950/50 px-4 py-2 rounded-lg border border-slate-700/50">
+                            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1"><i class="fa-solid fa-sack-dollar mr-1"></i> Tahmini Tutar</p>
+                            <p class="font-bold text-amber-400">${rec.sigorta.tutar ? Number(rec.sigorta.tutar).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺' : 'Belirtilmedi'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Mağdur Kartı -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="bg-emerald-500 text-white p-3 flex items-center justify-center gap-2 font-bold tracking-wider">
+                            <i class="fa-solid fa-shield-heart"></i> MAĞDUR
+                        </div>
+                        <div class="p-5 space-y-6 flex-1">
+                            <!-- Sürücü -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <h5 class="text-xs font-bold text-emerald-600 mb-3 flex items-center gap-2"><i class="fa-solid fa-user-injured"></i> SÜRÜCÜ BİLGİLERİ</h5>
+                                <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Ad Soyad</span><strong class="text-slate-700">${rec.magdur.surucuAd || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">TC Kimlik</span><strong class="text-slate-700">${rec.magdur.surucuTc || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Telefon</span><strong class="text-slate-700">${rec.magdur.surucuTel || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Doğum Tarihi</span><strong class="text-slate-700">${formatDate(rec.magdur.surucuDogum)}</strong></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Araç -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <h5 class="text-xs font-bold text-emerald-600 mb-3 flex items-center gap-2"><i class="fa-solid fa-car"></i> ARAÇ BİLGİLERİ</h5>
+                                <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Plaka</span><strong class="text-emerald-700 text-lg uppercase bg-emerald-100 px-2 py-0.5 rounded">${(rec.magdur.plaka || '-').replace(/\s+/g, '')}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Marka / Model</span><strong class="text-slate-700">${rec.magdur.markaModel || '-'} <span class="text-slate-500 font-normal">(${rec.magdur.yil || '-'})</span></strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Ruhsat Seri</span><strong class="text-slate-700">${rec.magdur.ruhsat || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Şasi No</span><strong class="text-slate-700">${rec.magdur.sasi || '-'}</strong></div>
+                                    <div class="col-span-2"><span class="text-slate-400 block text-xs">Motor No</span><strong class="text-slate-700">${rec.magdur.motor || '-'}</strong></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ruhsat Sahibi -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <h5 class="text-xs font-bold text-emerald-600 mb-3 flex items-center gap-2"><i class="fa-solid fa-file-signature"></i> RUHSAT SAHİBİ</h5>
+                                <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Ad Soyad</span><strong class="text-slate-700">${rec.magdur.sahipAd || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">TC Kimlik</span><strong class="text-slate-700">${rec.magdur.sahipTc || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Telefon</span><strong class="text-slate-700">${rec.magdur.sahipTel || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Doğum Tarihi</span><strong class="text-slate-700">${formatDate(rec.magdur.sahipDogum)}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vuran Kartı -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="bg-rose-500 text-white p-3 flex items-center justify-center gap-2 font-bold tracking-wider">
+                            <i class="fa-solid fa-car-side"></i> VURAN
+                        </div>
+                        <div class="p-5 space-y-6 flex-1">
+                            <!-- Sürücü -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <h5 class="text-xs font-bold text-rose-600 mb-3 flex items-center gap-2"><i class="fa-solid fa-user-ninja"></i> SÜRÜCÜ BİLGİLERİ</h5>
+                                <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Ad Soyad</span><strong class="text-slate-700">${rec.vuran.surucuAd || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">TC Kimlik</span><strong class="text-slate-700">${rec.vuran.surucuTc || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Telefon</span><strong class="text-slate-700">${rec.vuran.surucuTel || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Doğum Tarihi</span><strong class="text-slate-700">${formatDate(rec.vuran.surucuDogum)}</strong></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Araç -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <h5 class="text-xs font-bold text-rose-600 mb-3 flex items-center gap-2"><i class="fa-solid fa-car"></i> ARAÇ BİLGİLERİ</h5>
+                                <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Plaka</span><strong class="text-rose-700 text-lg uppercase bg-rose-100 px-2 py-0.5 rounded">${(rec.vuran.plaka || '-').replace(/\s+/g, '')}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Marka / Model</span><strong class="text-slate-700">${rec.vuran.markaModel || '-'} <span class="text-slate-500 font-normal">(${rec.vuran.yil || '-'})</span></strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Ruhsat Seri</span><strong class="text-slate-700">${rec.vuran.ruhsat || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Şasi No</span><strong class="text-slate-700">${rec.vuran.sasi || '-'}</strong></div>
+                                    <div class="col-span-2"><span class="text-slate-400 block text-xs">Motor No</span><strong class="text-slate-700">${rec.vuran.motor || '-'}</strong></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Ruhsat Sahibi -->
+                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <h5 class="text-xs font-bold text-rose-600 mb-3 flex items-center gap-2"><i class="fa-solid fa-file-signature"></i> RUHSAT SAHİBİ</h5>
+                                <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                    <div><span class="text-slate-400 block text-xs">Ad Soyad</span><strong class="text-slate-700">${rec.vuran.sahipAd || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">TC Kimlik</span><strong class="text-slate-700">${rec.vuran.sahipTc || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Telefon</span><strong class="text-slate-700">${rec.vuran.sahipTel || '-'}</strong></div>
+                                    <div><span class="text-slate-400 block text-xs">Doğum Tarihi</span><strong class="text-slate-700">${formatDate(rec.vuran.sahipDogum)}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hasar Çizimi -->
+                <div class="mt-6 bg-slate-50 rounded-xl border border-slate-200 p-5">
+                    <h5 class="text-xs font-bold text-slate-600 mb-4 flex items-center gap-2"><i class="fa-solid fa-car-burst text-red-500"></i> HASARLI BÖLGELER (MAĞDUR ARAÇ)</h5>
+                    <div class="flex justify-center">
+                        ${generateStaticCarDiagramHTML(JSON.stringify(rec.genel.hasarliParcalar || []))}
+                    </div>
+                </div>
+                <!-- Sigorta ve Ekspertiz -->
+                <div class="mt-6 bg-indigo-50 rounded-xl border border-indigo-100 p-5 flex flex-col md:flex-row gap-6 md:items-center">
+                    <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-500 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-file-contract text-2xl"></i>
+                    </div>
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <p class="text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">Sigorta Şirketi</p>
+                            <p class="font-bold text-indigo-900 text-lg">${rec.sigorta.sirket || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">Poliçe Numarası</p>
+                            <p class="font-bold text-indigo-900 text-lg">${rec.sigorta.policeNo || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">Atanan Eksper</p>
+                            <p class="font-bold text-indigo-900 text-base">${rec.sigorta.eksperSirketi || 'Atanmadı'}</p>
+                            ${rec.sigorta.eksperTel ? `<p class="text-indigo-600 text-sm mt-1"><i class="fa-solid fa-phone text-xs mr-1"></i> ${rec.sigorta.eksperTel}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+
+        // PDF Yazdırma (Yeni Pencerede)
+        function printRecord(id) {
+            const records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            const rec = records.find(r => r.id === id);
+            if (!rec) return;
+
+            const modalHtml = document.getElementById('modalContent').innerHTML;
+
+            // Tailwind CDN ve ikonları içeren temiz bir HTML penceresi oluştur
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Hasar Dosyasi - ${rec.genel?.dosyaNo || id}</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        @media print {
+                            body { padding: 0; }
+                            @page { margin: 1cm; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="margin-bottom: 20px; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+                        <h1 style="font-size: 24px; font-weight: bold; color: #1e293b;">HASAR DOSYASI AÇMA ASİSTANI</h1>
+                        <p style="color: #64748b;">Rapor Çıktısı</p>
+                    </div>
+                    ${modalHtml}
+                    <script>
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        function editRecord(id) {
+            const records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            const rec = records.find(r => r.id === id);
+            if (!rec) return;
+
+            currentEditId = id;
+
+            // Formu Doldur - Genel
+            document.getElementById('kazaTarihi').value = rec.genel.tarih || '';
+            document.getElementById('kazaSaati').value = rec.genel.saat || '';
+            document.getElementById('il').value = rec.genel.il || '';
+            document.getElementById('ilce').value = rec.genel.ilce || '';
+            document.getElementById('dosyaNo').value = rec.genel.dosyaNo || '';
+
+            // Formu Doldur - Mağdur
+            document.getElementById('m_surucuAd').value = rec.magdur.surucuAd || '';
+            document.getElementById('m_surucuTc').value = rec.magdur.surucuTc || '';
+            document.getElementById('m_surucuTel').value = rec.magdur.surucuTel || '';
+            document.getElementById('m_surucuDogum').value = rec.magdur.surucuDogum || '';
+            document.getElementById('m_aracPlaka').value = rec.magdur.plaka ? rec.magdur.plaka.replace(/\s+/g, '') : '';
+            document.getElementById('m_aracRuhsat').value = rec.magdur.ruhsat || '';
+            document.getElementById('m_aracMarkaModel').value = rec.magdur.markaModel || '';
+            document.getElementById('m_aracYil').value = rec.magdur.yil || '';
+            document.getElementById('m_aracSasi').value = rec.magdur.sasi || '';
+            document.getElementById('m_aracMotor').value = rec.magdur.motor || '';
+            document.getElementById('m_sahipAd').value = rec.magdur.sahipAd || '';
+            document.getElementById('m_sahipTc').value = rec.magdur.sahipTc || '';
+            document.getElementById('m_sahipTel').value = rec.magdur.sahipTel || '';
+            document.getElementById('m_sahipDogum').value = rec.magdur.sahipDogum || '';
+
+            // Formu Doldur - Vuran
+            document.getElementById('v_surucuAd').value = rec.vuran.surucuAd || '';
+            document.getElementById('v_surucuTc').value = rec.vuran.surucuTc || '';
+            document.getElementById('v_surucuTel').value = rec.vuran.surucuTel || '';
+            document.getElementById('v_surucuDogum').value = rec.vuran.surucuDogum || '';
+            document.getElementById('v_aracPlaka').value = rec.vuran.plaka ? rec.vuran.plaka.replace(/\s+/g, '') : '';
+            document.getElementById('v_aracRuhsat').value = rec.vuran.ruhsat || '';
+            document.getElementById('v_aracMarkaModel').value = rec.vuran.markaModel || '';
+            document.getElementById('v_aracYil').value = rec.vuran.yil || '';
+            document.getElementById('v_aracSasi').value = rec.vuran.sasi || '';
+            document.getElementById('v_aracMotor').value = rec.vuran.motor || '';
+            document.getElementById('v_sahipAd').value = rec.vuran.sahipAd || '';
+            document.getElementById('v_sahipTc').value = rec.vuran.sahipTc || '';
+            document.getElementById('v_sahipTel').value = rec.vuran.sahipTel || '';
+            document.getElementById('v_sahipDogum').value = rec.vuran.sahipDogum || '';
+
+            // Formu Doldur - Sigorta ve Ekspertiz
+            document.getElementById('sigortaSirketi').value = rec.sigorta.sirket || '';
+            document.getElementById('policeNo').value = rec.sigorta.policeNo || '';
+            if (rec.sigorta.tutar) {
+                let formatter = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                document.getElementById('hasarTutari').value = formatter.format(rec.sigorta.tutar);
+            } else {
+                document.getElementById('hasarTutari').value = '';
+            }
+            document.getElementById('eksperAd').value = rec.sigorta.eksperSirketi || '';
+            document.getElementById('eksperTel').value = rec.sigorta.eksperTel || '';
+
+            // Ekspertiz kısmını göster
+            document.getElementById('ekspertizSection').classList.remove('hidden');
+
+            // Hasar çizimini yükle
+            if (typeof loadDamageToCar === 'function') {
+                loadDamageToCar(rec.genel.hasarliParcalar || []);
+            }
+
+            // Form tab'ına geç
+            switchTab('form');
+            window.scrollTo(0, 0);
+            showToast('Düzenleme Modu Aktif', '#3B82F6');
+        }
+
+        function deleteRecord(id) {
+            showCustomModal({
+                title: 'Dosyayı Silmek İstiyor Musunuz?',
+                message: 'Bu işlem geri alınamaz. Kayıt bilgisayarınızdan kalıcı olarak silinecektir.',
+                type: 'danger',
+                confirmText: 'Evet, Sil',
+                onConfirm: () => {
+                    let records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+                    records = records.filter(r => r.id !== id);
+                    localStorage.setItem(DB_KEY, JSON.stringify(records));
+                    renderTable();
+                    showToast('Kayıt silindi!', '#EF4444');
+                }
+            });
+        }
+
+        async function downloadJson(id) {
+            const records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            const rec = records.find(r => r.id === id);
+            if (!rec) return;
+
+            const dosyaAdi = `hasar_dosyasi_${rec.genel.dosyaNo || rec.id}.json`;
+            const jsonStr = JSON.stringify(rec, null, 2);
+
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: dosyaAdi,
+                        types: [{
+                            description: 'JSON Dosyası',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(jsonStr);
+                    await writable.close();
+                    showToast('Dosya başarıyla JSON olarak indirildi!', '#10B981');
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        fallbackDownload(jsonStr, dosyaAdi);
+                    }
+                }
+            } else {
+                fallbackDownload(jsonStr, dosyaAdi);
+            }
+        }
+
+        // Yardımcı Fonksiyonlar
+        function kopyalaSurucu(prefix) {
+            const isChecked = document.getElementById(prefix + '_ayniKisi').checked;
+            if (isChecked) {
+                document.getElementById(prefix + '_sahipAd').value = document.getElementById(prefix + '_surucuAd').value;
+                document.getElementById(prefix + '_sahipTc').value = document.getElementById(prefix + '_surucuTc').value;
+                document.getElementById(prefix + '_sahipTel').value = document.getElementById(prefix + '_surucuTel').value;
+                document.getElementById(prefix + '_sahipDogum').value = document.getElementById(prefix + '_surucuDogum').value;
+            } else {
+                document.getElementById(prefix + '_sahipAd').value = '';
+                document.getElementById(prefix + '_sahipTc').value = '';
+                document.getElementById(prefix + '_sahipTel').value = '';
+                document.getElementById(prefix + '_sahipDogum').value = '';
+            }
+        }
+
+        // Toast Bildirimi
+        function showToast(message, color = '#2563EB') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = message;
+            toast.style.backgroundColor = color;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Dosya Yükleme İşlemi
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const uploadedData = JSON.parse(e.target.result);
+                    let records = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+                    let isSuccess = false;
+
+                    if (Array.isArray(uploadedData)) {
+                        let count = 0;
+                        uploadedData.forEach(item => {
+                            if (item && item.id && item.genel) {
+                                if (!records.some(r => r.id === item.id)) {
+                                    records.push(item);
+                                    count++;
+                                }
+                            }
+                        });
+                        if (count > 0) {
+                            showToast(`${count} adet kayıt başarıyla içe aktarıldı!`, '#10B981');
+                            isSuccess = true;
+                        } else {
+                            showToast('İçe aktarılacak yeni kayıt bulunamadı.', '#F59E0B');
+                        }
+                    } else if (uploadedData && uploadedData.id && uploadedData.genel) {
+                        // Tekil dosya
+                        const existingIndex = records.findIndex(r => r.id === uploadedData.id);
+                        if (existingIndex !== -1) {
+                            records[existingIndex] = uploadedData;
+                            showToast('Mevcut dosya güncellendi!', '#10B981');
+                        } else {
+                            records.unshift(uploadedData);
+                            showToast('Dosya başarıyla yüklendi!', '#10B981');
+                        }
+                        isSuccess = true;
+                    } else {
+                        showToast('Geçersiz dosya formatı!', '#EF4444');
+                    }
+
+                    if (isSuccess) {
+                        localStorage.setItem(DB_KEY, JSON.stringify(records));
+                        renderTable();
+                    }
+                } catch (error) {
+                    showToast('Dosya okunamadı!', '#EF4444');
+                }
+
+                // Inputu sıfırla ki aynı dosyayı tekrar yükleyebilsin
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}.${m}.${y}`;
+        }
+
+        // --- Araç Hasar Çizimi JS ---
+        function toggleDamage(partId) {
+            const part = document.getElementById(partId);
+            if (part) {
+                part.classList.toggle('damaged');
+                updateDamageInput();
+            }
+        }
+
+        function updateDamageInput() {
+            const damagedParts = [];
+            const parts = document.querySelectorAll('#carDiagramSvg g[id^="car-"]');
+            parts.forEach(p => {
+                if (p.classList.contains('damaged')) {
+                    damagedParts.push(p.id);
+                }
+            });
+            const input = document.getElementById('hasarliParcalar');
+            if (input) input.value = JSON.stringify(damagedParts);
+        }
+
+        function loadDamageToCar(damagedParts) {
+            // Reset all
+            const parts = document.querySelectorAll('#carDiagramSvg g[id^="car-"]');
+            parts.forEach(p => p.classList.remove('damaged'));
+
+            if (damagedParts && damagedParts.length > 0) {
+                damagedParts.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('damaged');
+                });
+            }
+            const input = document.getElementById('hasarliParcalar');
+            if (input) input.value = JSON.stringify(damagedParts || []);
+        }
+
+        function generateStaticCarDiagramHTML(damagedPartsJson) {
+            let damagedParts = [];
+            try { damagedParts = JSON.parse(damagedPartsJson || '[]'); } catch (e) { }
+
+            const c = (id) => damagedParts.includes(id) ? 'damaged' : '';
+
+            return `
+<svg viewBox="0 0 400 500" class="mx-auto w-[340px] h-[400px] select-none" style="transform: scale(0.65); transform-origin: center; margin: -50px 0;">
+    <defs>
+        <style>
+            .car-part { fill: #e5e7eb; stroke: #9ca3af; stroke-width: 3; }
+            g.damaged .car-part { fill: #ef4444 !important; stroke: #b91c1c !important; }
+            .car-text { font-family: sans-serif; font-size: 11px; font-weight: bold; fill: #6b7280; pointer-events: none; }
+            g.damaged .car-text { fill: white !important; }
+            .car-glass { fill: #ffffff; stroke: #9ca3af; stroke-width: 2; pointer-events: none; }
+        </style>
+    </defs>
+
+    <circle cx="85" cy="140" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+    <circle cx="85" cy="380" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+    <circle cx="315" cy="140" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+    <circle cx="315" cy="380" r="25" fill="#d1d5db" stroke="#9ca3af" stroke-width="3" />
+
+    <g class="${c('car-kaput')}">
+        <path class="car-part" d="M 155 80 Q 200 75 245 80 L 255 170 Q 200 180 145 170 Z" />
+    </g>
+    <path class="car-glass" d="M 148 175 Q 200 185 252 175 L 246 215 Q 200 205 154 215 Z" />
+    <g class="${c('car-tavan')}">
+        <path class="car-part" d="M 154 220 Q 200 210 246 220 L 246 315 Q 200 325 154 315 Z" />
+    </g>
+    <path class="car-glass" d="M 152 320 Q 200 330 248 320 L 253 355 Q 200 345 147 355 Z" />
+    <g class="${c('car-bagaj')}">
+        <path class="car-part" d="M 145 360 Q 200 350 255 360 L 245 420 Q 200 430 155 420 Z" />
+    </g>
+
+    <g class="${c('car-on-tampon')}">
+        <path class="car-part" d="M 160 30 Q 200 25 240 30 L 245 50 Q 200 60 155 50 Z" />
+        <rect x="165" y="35" width="20" height="10" rx="3" fill="#ffffff" pointer-events="none" />
+        <rect x="215" y="35" width="20" height="10" rx="3" fill="#ffffff" pointer-events="none" />
+        <text x="200" y="45" text-anchor="middle" class="car-text" style="font-size: 9px;">ÖN</text>
+    </g>
+    <g class="${c('car-arka-tampon')}">
+        <path class="car-part" d="M 155 440 Q 200 450 245 440 L 240 460 Q 200 465 160 460 Z" />
+        <rect x="165" y="445" width="20" height="10" rx="3" fill="#ffffff" pointer-events="none" />
+        <rect x="215" y="445" width="20" height="10" rx="3" fill="#ffffff" pointer-events="none" />
+        <text x="200" y="455" text-anchor="middle" class="car-text" style="font-size: 9px;">ARKA</text>
+    </g>
+
+    <g class="${c('car-sol-on-camurluk')}">
+        <path class="car-part" d="M 145 80 L 105 80 Q 90 120 85 165 L 138 170 Z" />
+    </g>
+    <g class="${c('car-sol-on-kapi')}">
+        <path class="car-part" d="M 136 175 L 82 170 Q 70 215 65 265 L 143 265 Z" />
+        <path class="car-glass" d="M 130 185 L 88 181 Q 80 220 78 255 L 135 255 Z" />
+    </g>
+    <g class="${c('car-sol-arka-kapi')}">
+        <path class="car-part" d="M 143 270 L 65 270 Q 70 315 82 345 L 141 350 Z" />
+        <path class="car-glass" d="M 135 280 L 78 280 Q 80 315 88 335 L 133 340 Z" />
+    </g>
+    <g class="${c('car-sol-arka-camurluk')}">
+        <path class="car-part" d="M 139 355 L 85 355 Q 90 390 105 410 L 148 410 Z" />
+    </g>
+
+    <g class="${c('car-sag-on-camurluk')}">
+        <path class="car-part" d="M 255 80 L 295 80 Q 310 120 315 165 L 262 170 Z" />
+    </g>
+    <g class="${c('car-sag-on-kapi')}">
+        <path class="car-part" d="M 264 175 L 318 170 Q 330 215 335 265 L 257 265 Z" />
+        <path class="car-glass" d="M 270 185 L 312 181 Q 320 220 322 255 L 265 255 Z" />
+    </g>
+    <g class="${c('car-sag-arka-kapi')}">
+        <path class="car-part" d="M 257 270 L 335 270 Q 330 315 318 345 L 259 350 Z" />
+        <path class="car-glass" d="M 265 280 L 322 280 Q 320 315 312 335 L 267 340 Z" />
+    </g>
+    <g class="${c('car-sag-arka-camurluk')}">
+        <path class="car-part" d="M 261 355 L 315 355 Q 310 390 295 410 L 252 410 Z" />
+    </g>
+</svg>
+            `;
+        }
+    </script>
+</body>
+
+</html>
