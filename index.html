@@ -971,8 +971,15 @@
                         <p class="font-semibold">Ruhsat fotoğrafı seçin veya çekin</p>
                         <p class="text-xs mt-1" style="color:var(--muted)">Sürükleyip bırakabilirsiniz. Ön yüz, düz zemin, parlamasız ve kadraja tam oturmuş olmalı.</p>
                     </div>
-                    <img id="ocrPreview" class="hidden mx-auto max-h-56 rounded-lg shadow" alt="Ruhsat önizleme">
+                    <img id="ocrPreview" class="hidden mx-auto max-h-56 rounded-lg shadow transition-transform" alt="Ruhsat önizleme">
                 </label>
+
+                <ul class="text-xs grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1" style="color:var(--muted)">
+                    <li><i class="fa-solid fa-check text-emerald-500"></i> Kartı kadraja tam oturtun, kenarları görünsün</li>
+                    <li><i class="fa-solid fa-check text-emerald-500"></i> Flaşı kapatın, parlama olmasın</li>
+                    <li><i class="fa-solid fa-check text-emerald-500"></i> Telefonu karta paralel tutun, eğik çekmeyin</li>
+                    <li><i class="fa-solid fa-check text-emerald-500"></i> Gün ışığında, netleşmesini bekleyip çekin</li>
+                </ul>
 
                 <!-- Adım 2: İlerleme -->
                 <div id="ocrProgressWrap" class="hidden">
@@ -995,8 +1002,10 @@
             </div>
 
             <div class="p-4 border-t flex gap-3 justify-end" style="border-color:var(--line);background:var(--field)">
+                <button type="button" onclick="rotateOcr()" id="ocrRotate" title="Fotoğraf yan veya ters çekildiyse"
+                    class="hidden px-4 py-2.5 rounded-xl text-sm font-semibold border mr-auto" style="border-color:var(--line)"><i class="fa-solid fa-rotate-right"></i> Döndür</button>
                 <button type="button" onclick="document.getElementById('ocrFile').click()" id="ocrRetry"
-                    class="hidden px-4 py-2.5 rounded-xl text-sm font-semibold border" style="border-color:var(--line)"><i class="fa-solid fa-rotate"></i> Başka Fotoğraf</button>
+                    class="hidden px-4 py-2.5 rounded-xl text-sm font-semibold border" style="border-color:var(--line)"><i class="fa-solid fa-image"></i> Başka Fotoğraf</button>
                 <button type="button" onclick="closeOcr()" class="px-4 py-2.5 rounded-xl text-sm font-semibold border" style="border-color:var(--line)">İptal</button>
                 <button type="button" onclick="applyOcr()" id="ocrApply" disabled
                     class="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
@@ -2369,56 +2378,111 @@
             return ((d10 + 10) % 10) === d[9] && d11 === d[10];
         }
 
-        // Ruhsat metnini alanlara ayırır. Ruhsat kartındaki standart alan kodlarını (A, D.1, E, P.5 ...) ve
-        // biçim kurallarını (plaka, 17 haneli şasi, TC algoritması) birlikte kullanır.
-        function parseRuhsatText(rawText) {
-            const text = rawText.toLocaleUpperCase('tr-TR').replace(/[|«»“”"']/g, ' ');
-            const lines = text.split(/\r?\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
-            const codeRe = code => new RegExp('[(\\[{]?\\s*' + code.split('.').join('\\s*[.,·:]\\s*') + '\\s*[)\\]}]', '');
-            const anyCode = /[(\[{]\s*[A-Z](\s*[.,·]\s*\d){0,2}\s*[)\]}]/;
+        // Ruhsat metnini alanlara ayırır. Ruhsatta etiketler "(D.1) MARKASI (D.2) TİPİ" gibi bir satırda,
+        // değerler ise hemen altındaki satırda sütun sütun durur. geoLines (Tesseract kelime koordinatları)
+        // verilirse her etiketin altındaki sütun koordinatla seçilir; verilmezse metin üzerinden tahmin edilir.
+        function parseRuhsatText(rawText, geoLines) {
+            // Kart kenarından gelen kısa, küçük harfli parçalar ("Ri", "iğ", "la)") gürültüdür; ruhsat değerleri büyük harftir.
+            const isJunk = t => {
+                const core = t.replace(/[^\p{L}\p{N}]/gu, '');
+                return !core || (/[a-zçğıöşü]/.test(t) && core.length <= 3);
+            };
+            const up = t => t.toLocaleUpperCase('tr-TR').replace(/[|«»“”"'‘’$!*~^`]/g, '');
+            const rows = geoLines && geoLines.length
+                ? geoLines.map(l => (l.words || []).map(w => ({ t: w.text, x0: w.bbox.x0, x1: w.bbox.x1 })))
+                : (rawText || '').split(/\r?\n/).map(l => l.split(/\s+/).map(t => ({ t })));
+            const lines = rows.map(ws => {
+                ws = ws.filter(w => w.t);
+                // Gürültü kart kenarlarından gelir: yalnızca satırın başındaki ve sonundaki parçaları at
+                while (ws.length && isJunk(ws[ws.length - 1].t)) ws.pop();
+                while (ws.length && isJunk(ws[0].t)) ws.shift();
+                ws = ws.map(w => ({ ...w, t: up(w.t) })).filter(w => w.t);
+                let pos = 0;
+                ws.forEach(w => { w.s = pos; pos += w.t.length + 1; w.e = pos - 1; });
+                return { text: ws.map(w => w.t).join(' '), words: ws };
+            }).filter(l => l.text.trim());
+            const L = lines.map(l => l.text);
+            const text = L.join('\n');
+            const pageW = Math.max(1, ...lines.flatMap(l => l.words.map(w => w.x1 || 0)));
+            const hasGeo = lines.some(l => l.words.some(w => w.x0 !== undefined));
 
-            // Kod etiketinden sonra gelen değeri bul (aynı satır, yoksa alt satır)
-            function byCode(code, labels = []) {
-                const re = codeRe(code);
-                for (let i = 0; i < lines.length; i++) {
-                    const m = lines[i].match(re);
-                    if (!m) continue;
-                    const clean = str => {
-                        let v = str.split(anyCode)[0];
-                        labels.forEach(l => { v = v.replace(new RegExp('(^|[^A-Z0-9ÇĞİÖŞÜ])' + l.replace(/\./g, '\\.') + '(?=$|[^A-Z0-9ÇĞİÖŞÜ])', 'g'), '$1 '); });
-                        v = v.replace(/^\s*\/\s*/, '');
-                        return v.replace(/^[\s:.\-–]+|[\s:.\-–]+$/g, '').replace(/\s+/g, ' ');
-                    };
-                    let v = clean(lines[i].slice(m.index + m[0].length));
-                    if (v.replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '').length < 2 && lines[i + 1]) v = clean(lines[i + 1]);
-                    if (v.replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '').length >= 2) return v;
+            const LET = 'A-Z0-9ÇĞİÖŞÜ';
+            // Tek harfli kodlarda açılış parantezi zorunlu ("KUTULU)" gibi kelimeler "A)" sanılmasın)
+            const codeRe = code => new RegExp((code.includes('.') ? '[(\\[{]?' : '[(\\[{]') + '\\s*' + code.split('.').join('\\s*[.,·:]\\s*') + '\\s*[)\\]}]');
+            const anyCode = /[(\[{]\s*[A-Z](\s*[.,·]\s*\d){0,2}\s*[)\]}]/g;
+            const firstCode = str => { anyCode.lastIndex = 0; const m = anyCode.exec(str); return m ? m.index : -1; };
+            const countCodes = str => (str.match(anyCode) || []).length;
+            const meaningful = v => v.replace(new RegExp('[^' + LET + ']', 'g'), '').length >= 2;
+
+            function byCode(code, labels = [], altRe = null) {
+                const clean = str => {
+                    let v = str;
+                    labels.forEach(l => { v = v.replace(new RegExp('(^|[^' + LET + '])' + l.replace(/\./g, '\\.') + '(?=$|[^' + LET + '])', 'g'), '$1 '); });
+                    return v.replace(/^[\s:.\-–/]+|[\s:.\-–/]+$/g, '').replace(/\s+/g, ' ');
+                };
+                for (const re of [codeRe(code), altRe].filter(Boolean)) {
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i], m = line.text.match(re);
+                        if (!m) continue;
+                        const afterStart = m.index + m[0].length;
+                        const after = line.text.slice(afterStart);
+                        const nc = firstCode(after);
+                        let v = clean(nc >= 0 ? after.slice(0, nc) : after);
+                        if (meaningful(v)) return v;
+
+                        const next = lines[i + 1];
+                        if (!next || firstCode(next.text) === 0 && countCodes(next.text) > 0 && !hasGeo) continue;
+                        if (hasGeo) {
+                            const wStart = line.words.find(w => w.e > m.index) || line.words[0];
+                            const wNext = nc >= 0 ? line.words.find(w => w.e > afterStart + nc) : null;
+                            const slack = pageW * 0.03;
+                            const x0 = wStart.x0 - slack, x1 = wNext ? wNext.x0 - slack / 3 : Infinity;
+                            v = clean(next.words.filter(w => { const c = (w.x0 + w.x1) / 2; return c >= x0 && c < x1; }).map(w => w.t).join(' '));
+                        } else {
+                            // Koordinat yoksa: etiket satırındaki kaçıncı sütun olduğumuza göre alt satırdan parça seç
+                            const k = countCodes(line.text.slice(0, m.index));
+                            const n = k + 1 + countCodes(after);
+                            const toks = next.text.split(' ');
+                            if (n <= 1) v = clean(next.text.slice(0, Math.max(0, firstCode(next.text)) || undefined));
+                            else if (toks.length === n) v = clean(toks[k]);
+                            else if (k === 0) v = clean(toks[0]);
+                            else if (k === n - 1) v = clean(toks[toks.length - 1]);
+                            else v = clean(next.text);
+                        }
+                        if (meaningful(v)) return v;
+                    }
                 }
                 return '';
             }
-            const byLabel = (re) => {
-                for (let i = 0; i < lines.length; i++) {
-                    const m = lines[i].match(re);
-                    if (!m) continue;
-                    let v = lines[i].slice(m.index + m[0].length).replace(/^[\s:.\-]+/, '').split(anyCode)[0].trim();
-                    if (v.length < 2 && lines[i + 1]) v = lines[i + 1].split(anyCode)[0].trim();
-                    if (v.length >= 2) return v;
-                }
-                return '';
-            };
             const r = {};
 
-            // Plaka: 01-81 il kodu + 1-3 harf + 2-4 rakam
-            const plakaRe = /\b(0[1-9]|[1-7]\d|8[01])\s?([A-Z]{1,3})\s?(\d{2,4})\b/;
-            const fixDigits = s => s.replace(/[OQD]/g, '0').replace(/[IL|]/g, '1').replace(/S/g, '5').replace(/B/g, '8');
-            let pSrc = byCode('A', ['PLAKA', 'PLAKASI']);
-            let pm = (pSrc && pSrc.match(plakaRe)) || null;
-            if (!pm) {
-                pm = text.replace(/\n/g, ' ').match(plakaRe);
+            // Plaka: 01-81 il kodu + 1-3 harf + 2-4 rakam.
+            // OCR'ın tipik karışıklıkları (0/O, 1/I, 4/A, 5/S, 8/B, 2/Z) bölüme göre düzeltilir.
+            const fixDigits = s => s.replace(/[OQDU]/g, '0').replace(/[IİLT|]/g, '1').replace(/A/g, '4').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2').replace(/G/g, '6');
+            const fixLetters = s => s.replace(/0/g, 'O').replace(/1/g, 'I').replace(/4/g, 'A').replace(/5/g, 'S').replace(/8/g, 'B').replace(/2/g, 'Z').replace(/6/g, 'G').replace(/İ/g, 'I');
+            const validPlaka = (a, b, c) => {
+                const il = +a;
+                return il >= 1 && il <= 81 && /^[A-Z]{1,3}$/.test(b) && /^\d{2,4}$/.test(c) && (b.length + c.length) >= 4 && (b.length + c.length) <= 6;
+            };
+            function plakaFrom(src, loose) {
+                if (!src) return '';
+                const t = src.replace(/İ/g, 'I');
+                for (const m of t.matchAll(/(?:^|[^A-Z0-9])(\d{2})\s?([A-Z]{1,3})\s?(\d{2,4})(?![A-Z0-9])/g)) {
+                    if (validPlaka(m[1], m[2], m[3])) return m[1] + ' ' + m[2] + ' ' + m[3];
+                }
+                if (!loose) return '';
+                for (const m of t.matchAll(/(?:^|[^A-Z0-9])([0-9OQDUILT|ASBZG]{2})\s?([A-Z0-9]{1,3})\s?([0-9OQDUILT|SBZG]{2,4})(?![A-Z0-9])/g)) {
+                    if (!/[A-Z]/.test(m[2])) continue;
+                    const a = fixDigits(m[1]), b = fixLetters(m[2]), c = fixDigits(m[3]);
+                    if (validPlaka(a, b, c)) return a + ' ' + b + ' ' + c;
+                }
+                return '';
             }
-            if (pm) r.plaka = pm[1] + ' ' + pm[2] + ' ' + pm[3];
+            r.plaka = plakaFrom(byCode('A', ['PLAKA', 'PLAKASI', 'NO'], /PLAKA(SI)?/), true)
+                || L.map(l => plakaFrom(l, false)).find(Boolean) || '';
 
             // Belge seri no: 2 harf + 6 rakam
-            for (const l of lines) {
+            for (const l of L) {
                 if (!/SER[İI]|BELGE/.test(l)) continue;
                 const m = l.match(/\b([A-Z]{2})\s*(?:NO|N°|Nº)?\s*[:.]?\s*([0-9OIL]{6})\b/);
                 if (m && !/^(NO|SE)$/.test(m[1])) { r.seri = m[1] + fixDigits(m[2]); break; }
@@ -2434,22 +2498,21 @@
                 }
                 return '';
             };
-            const sasiLabels = ['ŞASE', 'ŞASİ', 'SASE', 'SASI', 'NO', 'NUMARASI'];
-            r.sasi = vinFrom(byCode('E', sasiLabels)) || vinFrom(byLabel(/ŞAS[EİI]\s*NO|SAS[EI]\s*NO/)) || lines.map(l => vinFrom(l, 6)).find(Boolean) || '';
+            r.sasi = vinFrom(byCode('E', ['ŞASE', 'ŞASİ', 'SASE', 'SASI', 'NO', 'NUMARASI'], /ŞAS[EİI]\s*NO|SAS[EI]\s*NO/))
+                || L.map(l => vinFrom(l, 6)).find(Boolean) || '';
 
             // Motor no
-            const motor = byCode('P.5', ['MOTOR', 'NO', 'NUMARASI']) || byLabel(/MOTOR\s*NO/);
-            if (motor) r.motor = motor.replace(/[^A-Z0-9\-]/g, '').slice(0, 20);
+            const motor = byCode('P.5', ['MOTOR', 'NO', 'NUMARASI'], /MOTOR\s*NO/);
+            if (motor) r.motor = motor.split(' ')[0].replace(/[^A-Z0-9\-]/g, '').slice(0, 20);
 
-            // Marka + ticari adı
-            const marka = byCode('D.1', ['MARKASI', 'MARKA']);
-            const ticari = byCode('D.3', ['TİCARİ', 'TICARI', 'ADI']) || byCode('D.2', ['TİPİ', 'TIPI']);
+            // Marka + ticari adı (yoksa tipi)
+            const marka = byCode('D.1', ['MARKASI', 'MARKA'], /MARKASI/);
+            const ticari = byCode('D.3', ['TİCARİ', 'TICARI', 'ADI'], /T[İI]CAR[İI]\s*ADI/) || byCode('D.2', ['TİPİ', 'TIPI']);
             const mm = [marka, ticari].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' ');
             if (mm) r.markaModel = mm.replace(/[^A-Z0-9ÇĞİÖŞÜ .\-/]/g, '').trim();
 
             // Model yılı
-            const yilSrc = byCode('D.4', ['MODEL', 'YILI']) || byLabel(/MODEL\s*YIL/);
-            const ym = (yilSrc || '').match(/\b(19[5-9]\d|20\d{2})\b/);
+            const ym = (byCode('D.4', ['MODEL', 'YILI'], /MODEL\s*YIL/) || '').match(/\b(19[5-9]\d|20\d{2})\b/);
             if (ym && +ym[1] <= new Date().getFullYear() + 1) r.yil = ym[1];
 
             // Ruhsat sahibi
@@ -2501,7 +2564,7 @@
             const side = document.getElementById('ocrSide');
             side.textContent = prefix === 'm' ? 'Mağdur aracı' : 'Vuran aracı';
             side.className = 'text-xs font-semibold px-2 py-0.5 rounded-full ' + (prefix === 'm' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700');
-            ['ocrProgressWrap', 'ocrResults', 'ocrPreview', 'ocrRetry'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['ocrProgressWrap', 'ocrResults', 'ocrPreview', 'ocrRetry', 'ocrRotate'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById('ocrDropEmpty').classList.remove('hidden');
             document.getElementById('ocrApply').disabled = true;
             document.getElementById('ocrFile').value = '';
@@ -2511,65 +2574,129 @@
         }
         function closeOcr() { document.getElementById('ocrModal').classList.add('hidden'); }
 
-        // Görüntüyü OCR için hazırla: boyutlandır, gri tonla, kontrastı artır
-        function prepareImage(img) {
-            const target = 2000;
-            const scale = Math.min(2.5, target / Math.max(img.naturalWidth, img.naturalHeight));
+        // Görüntüyü OCR için hazırla: döndür, boyutlandır, gri tonla, kontrastı artır.
+        // binarize=true ise yerel (adaptif) eşikleme ile desenli zemin ve parlamayı bastırır.
+        let ocrRotation = 0;
+        function prepareImage(img, binarize = false) {
+            const target = 2400;
+            const w0 = img.naturalWidth, h0 = img.naturalHeight;
+            const scale = Math.min(3, target / Math.max(w0, h0));
+            const sw = Math.round(w0 * scale), sh = Math.round(h0 * scale);
+            const rot = ocrRotation % 360, swap = rot === 90 || rot === 270;
             const c = document.createElement('canvas');
-            c.width = Math.round(img.naturalWidth * scale);
-            c.height = Math.round(img.naturalHeight * scale);
+            c.width = swap ? sh : sw; c.height = swap ? sw : sh;
             const ctx = c.getContext('2d');
-            ctx.drawImage(img, 0, 0, c.width, c.height);
-            const data = ctx.getImageData(0, 0, c.width, c.height);
+            ctx.translate(c.width / 2, c.height / 2);
+            ctx.rotate(rot * Math.PI / 180);
+            ctx.drawImage(img, -sw / 2, -sh / 2, sw, sh);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            const W = c.width, H = c.height;
+            const data = ctx.getImageData(0, 0, W, H);
             const px = data.data;
+            const gray = new Float32Array(W * H);
             let min = 255, max = 0;
-            for (let i = 0; i < px.length; i += 4) {
+            for (let i = 0, j = 0; i < px.length; i += 4, j++) {
                 const g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-                px[i] = g; if (g < min) min = g; if (g > max) max = g;
+                gray[j] = g; if (g < min) min = g; if (g > max) max = g;
             }
             const range = Math.max(1, max - min);
-            for (let i = 0; i < px.length; i += 4) {
-                const v = Math.max(0, Math.min(255, (px[i] - min) * 255 / range));
-                px[i] = px[i + 1] = px[i + 2] = v;
+            for (let j = 0; j < gray.length; j++) gray[j] = (gray[j] - min) * 255 / range;
+
+            if (binarize) {
+                // Integral görüntü ile yerel ortalama eşikleme (Bradley yöntemi)
+                const integ = new Float64Array((W + 1) * (H + 1));
+                for (let y = 0; y < H; y++) {
+                    let row = 0;
+                    for (let x = 0; x < W; x++) {
+                        row += gray[y * W + x];
+                        integ[(y + 1) * (W + 1) + x + 1] = integ[y * (W + 1) + x + 1] + row;
+                    }
+                }
+                const r = Math.max(8, Math.round(Math.max(W, H) / 40)), T = 0.15;
+                for (let y = 0; y < H; y++) {
+                    const y1 = Math.max(0, y - r), y2 = Math.min(H - 1, y + r);
+                    for (let x = 0; x < W; x++) {
+                        const x1 = Math.max(0, x - r), x2 = Math.min(W - 1, x + r);
+                        const cnt = (x2 - x1 + 1) * (y2 - y1 + 1);
+                        const sum = integ[(y2 + 1) * (W + 1) + x2 + 1] - integ[y1 * (W + 1) + x2 + 1] - integ[(y2 + 1) * (W + 1) + x1] + integ[y1 * (W + 1) + x1];
+                        gray[y * W + x] = gray[y * W + x] * cnt < sum * (1 - T) ? 0 : 255;
+                    }
+                }
             }
+            for (let i = 0, j = 0; i < px.length; i += 4, j++) px[i] = px[i + 1] = px[i + 2] = gray[j];
             ctx.putImageData(data, 0, 0);
             return c;
         }
 
+        let ocrImgReady = false;
         async function handleOcrFile(file) {
             if (!file || ocrBusy) return;
             if (!file.type.startsWith('image/')) { showToast('Lütfen bir fotoğraf seçin', '#ef4444'); return; }
+            const img = document.getElementById('ocrPreview');
+            img.style.transform = '';
+            ocrRotation = 0;
+            img.src = URL.createObjectURL(file);
+            img.classList.remove('hidden');
+            document.getElementById('ocrDropEmpty').classList.add('hidden');
+            ocrImgReady = false;
+            try { await new Promise((res, rej) => { img.onload = res; img.onerror = rej; }); ocrImgReady = true; }
+            catch (e) { showToast('Fotoğraf açılamadı', '#ef4444'); return; }
+            runOcr();
+        }
+
+        function rotateOcr() {
+            if (!ocrImgReady || ocrBusy) return;
+            ocrRotation = (ocrRotation + 90) % 360;
+            document.getElementById('ocrPreview').style.transform = `rotate(${ocrRotation}deg)`;
+            runOcr();
+        }
+
+        // Kritik alanlar eksikse farklı ayarlarla tekrar okur ve sonuçları birleştirir
+        const OCR_PASSES = [
+            { psm: '3', bin: false, label: 'Metin okunuyor' },
+            { psm: '11', bin: false, label: 'Dağınık alanlar taranıyor' },
+            { psm: '11', bin: true, label: 'Zemin deseni temizlenip tekrar okunuyor' },
+        ];
+        let ocrPassIdx = 0;
+        async function runOcr() {
+            if (ocrBusy) return;
             ocrBusy = true;
             document.getElementById('ocrApply').disabled = true;
             document.getElementById('ocrResults').classList.add('hidden');
-            const url = URL.createObjectURL(file);
             const img = document.getElementById('ocrPreview');
-            img.src = url; img.classList.remove('hidden');
-            document.getElementById('ocrDropEmpty').classList.add('hidden');
             try {
-                await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
                 setOcrProgress('OCR motoru yükleniyor…', 3);
                 await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
                 if (!ocrWorker) {
-                    setOcrProgress('Türkçe dil paketi hazırlanıyor (ilk seferde biraz sürer)…', 8);
+                    setOcrProgress('Türkçe dil paketi hazırlanıyor (ilk seferde biraz sürer)…', 5);
                     ocrWorker = await Tesseract.createWorker('tur', 1, {
                         logger: m => {
-                            if (m.status === 'recognizing text') setOcrProgress('Metin okunuyor…', 20 + m.progress * 78);
-                            else if (typeof m.progress === 'number') setOcrProgress('Dil paketi yükleniyor…', 8 + m.progress * 12);
+                            const base = 10 + ocrPassIdx * 30;
+                            if (m.status === 'recognizing text') setOcrProgress((OCR_PASSES[ocrPassIdx] || OCR_PASSES[0]).label + '…', base + m.progress * 30);
                         }
                     });
                 }
-                setOcrProgress('Görüntü iyileştiriliyor…', 18);
-                const canvas = prepareImage(img);
-                const { data } = await ocrWorker.recognize(canvas);
+                let merged = {}, raws = [];
+                const critical = ['plaka', 'sasi'];
+                for (ocrPassIdx = 0; ocrPassIdx < OCR_PASSES.length; ocrPassIdx++) {
+                    const pass = OCR_PASSES[ocrPassIdx];
+                    if (ocrPassIdx > 0 && critical.every(k => merged[k]) && Object.keys(merged).length >= 6) break;
+                    setOcrProgress(pass.label + '…', 10 + ocrPassIdx * 30);
+                    await ocrWorker.setParameters({ tessedit_pageseg_mode: pass.psm, preserve_interword_spaces: '1' });
+                    const { data } = await ocrWorker.recognize(prepareImage(img, pass.bin));
+                    raws.push(`--- Geçiş ${ocrPassIdx + 1} (psm ${pass.psm}${pass.bin ? ', ikili' : ''}) ---\n` + data.text);
+                    const parsed = parseRuhsatText(data.text, data.lines);
+                    Object.keys(parsed).forEach(k => { if (!merged[k]) merged[k] = parsed[k]; });
+                }
                 setOcrProgress('Tamamlandı', 100);
-                showOcrResults(parseRuhsatText(data.text), data.text);
+                showOcrResults(merged, raws.join('\n\n'));
             } catch (err) {
                 console.error(err);
                 setOcrProgress('Okuma başarısız: ' + (err.message || 'bilinmeyen hata') + '. İnternet bağlantınızı kontrol edin.', 0);
             } finally {
                 ocrBusy = false;
                 document.getElementById('ocrRetry').classList.remove('hidden');
+                document.getElementById('ocrRotate').classList.remove('hidden');
             }
         }
 
