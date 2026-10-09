@@ -233,6 +233,19 @@
         html.dark #customModalContent, html.dark #detailsModal > div { background: var(--card); color: var(--ink); }
         html.dark #detailsModal .bg-gray-50, html.dark #customModal .bg-gray-50\/80 { background: var(--field) !important; }
 
+
+        /* OCR */
+        .ocr-btn { background: linear-gradient(135deg, #eef2ff, #e0f2fe); color: #4338ca; border: 1px solid #c7d2fe; }
+        .ocr-btn:hover { box-shadow: 0 6px 16px -8px rgba(79, 70, 229, .6); }
+        html.dark .ocr-btn { background: rgba(99, 102, 241, .15); color: #c7d2fe; border-color: rgba(129, 140, 248, .35); }
+        #ocrDrop { border: 2px dashed var(--line); background: var(--field); transition: border-color .2s, background .2s; }
+        #ocrDrop.drag, #ocrDrop:hover { border-color: #818cf8; background: rgba(99, 102, 241, .06); }
+        #ocrModal .ocr-row input[type=text] { width: 100%; padding: .5rem .7rem; border-radius: .6rem; border: 1px solid var(--line);
+            background: var(--field); color: var(--ink); font-size: .85rem; outline: none; }
+        #ocrModal .ocr-row input[type=text]:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--ring); }
+        #ocrModal .ocr-row.missing input[type=text] { border-style: dashed; }
+        .ocr-filled { animation: ocrFlash 1.6s ease; }
+        @keyframes ocrFlash { 0%, 40% { box-shadow: 0 0 0 4px rgba(16, 185, 129, .45); border-color: #10b981; } 100% { box-shadow: none; } }
         @media (max-width: 767px) {
             #savebar { left: 0 !important; }
         }
@@ -412,9 +425,14 @@
 
                                 <!-- Araç -->
                                 <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
-                                    <h4
-                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i class="fa-solid fa-car"></i> Araç Bilgileri</h4>
+                                    <div class="flex items-center justify-between gap-2 mb-4">
+                                        <h4
+                                            class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                            <i class="fa-solid fa-car"></i> Araç Bilgileri</h4>
+                                        <button type="button" onclick="openOcr('m')"
+                                            class="ocr-btn text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                                            <i class="fa-solid fa-camera"></i> Ruhsattan Doldur</button>
+                                    </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div class="input-group"><label>Plaka No</label><input type="text"
                                                 id="m_aracPlaka" class="uppercase font-bold text-emerald-700 bg-white"
@@ -490,9 +508,14 @@
 
                                 <!-- Araç -->
                                 <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
-                                    <h4
-                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i class="fa-solid fa-car"></i> Araç Bilgileri</h4>
+                                    <div class="flex items-center justify-between gap-2 mb-4">
+                                        <h4
+                                            class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                            <i class="fa-solid fa-car"></i> Araç Bilgileri</h4>
+                                        <button type="button" onclick="openOcr('v')"
+                                            class="ocr-btn text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                                            <i class="fa-solid fa-camera"></i> Ruhsattan Doldur</button>
+                                    </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div class="input-group"><label>Plaka No</label><input type="text"
                                                 id="v_aracPlaka" class="uppercase font-bold text-red-700 bg-white"
@@ -922,6 +945,62 @@
             <div class="p-4 border-t bg-gray-50 flex justify-end">
                 <button onclick="closeModal()"
                     class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- OCR: Ruhsattan Doldur -->
+    <div id="ocrModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+        <div class="rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden" style="background:var(--card);color:var(--ink)">
+            <div class="p-5 border-b flex items-center justify-between" style="border-color:var(--line)">
+                <div>
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-camera text-indigo-500"></i> Ruhsattan Doldur
+                        <span id="ocrSide" class="text-xs font-semibold px-2 py-0.5 rounded-full"></span></h3>
+                    <p class="text-xs mt-0.5" style="color:var(--muted)">Fotoğraf yalnızca bu cihazda işlenir, hiçbir yere gönderilmez.</p>
+                </div>
+                <button type="button" onclick="closeOcr()" class="text-slate-400 hover:text-red-500" aria-label="Kapat"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-1 space-y-4">
+                <!-- Adım 1: Fotoğraf -->
+                <label id="ocrDrop" class="block rounded-xl p-6 text-center cursor-pointer">
+                    <input type="file" id="ocrFile" accept="image/*" class="hidden" onchange="handleOcrFile(this.files[0])">
+                    <div id="ocrDropEmpty">
+                        <i class="fa-solid fa-id-card text-4xl text-indigo-400 mb-3"></i>
+                        <p class="font-semibold">Ruhsat fotoğrafı seçin veya çekin</p>
+                        <p class="text-xs mt-1" style="color:var(--muted)">Sürükleyip bırakabilirsiniz. Ön yüz, düz zemin, parlamasız ve kadraja tam oturmuş olmalı.</p>
+                    </div>
+                    <img id="ocrPreview" class="hidden mx-auto max-h-56 rounded-lg shadow" alt="Ruhsat önizleme">
+                </label>
+
+                <!-- Adım 2: İlerleme -->
+                <div id="ocrProgressWrap" class="hidden">
+                    <div class="flex justify-between text-xs font-semibold mb-1.5"><span id="ocrStatus">Hazırlanıyor…</span><span id="ocrPct">0%</span></div>
+                    <div class="h-2 rounded-full overflow-hidden" style="background:var(--line)"><div id="ocrBar" class="h-full rounded-full transition-all" style="width:0;background:linear-gradient(90deg,#6366f1,#06b6d4)"></div></div>
+                </div>
+
+                <!-- Adım 3: Sonuçlar -->
+                <div id="ocrResults" class="hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-sm font-semibold">Okunan bilgiler <span class="font-normal text-xs" style="color:var(--muted)">(kontrol edip düzeltebilirsiniz)</span></p>
+                        <span id="ocrScore" class="text-xs font-bold px-2 py-1 rounded-full"></span>
+                    </div>
+                    <div id="ocrFields" class="space-y-2"></div>
+                    <details class="mt-4 text-xs">
+                        <summary class="cursor-pointer" style="color:var(--muted)">Ham OCR metnini göster</summary>
+                        <pre id="ocrRaw" class="mt-2 p-3 rounded-lg whitespace-pre-wrap max-h-48 overflow-auto" style="background:var(--field)"></pre>
+                    </details>
+                </div>
+            </div>
+
+            <div class="p-4 border-t flex gap-3 justify-end" style="border-color:var(--line);background:var(--field)">
+                <button type="button" onclick="document.getElementById('ocrFile').click()" id="ocrRetry"
+                    class="hidden px-4 py-2.5 rounded-xl text-sm font-semibold border" style="border-color:var(--line)"><i class="fa-solid fa-rotate"></i> Başka Fotoğraf</button>
+                <button type="button" onclick="closeOcr()" class="px-4 py-2.5 rounded-xl text-sm font-semibold border" style="border-color:var(--line)">İptal</button>
+                <button type="button" onclick="applyOcr()" id="ocrApply" disabled
+                    class="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    style="background:linear-gradient(135deg,#4f46e5,#2563eb)"><i class="fa-solid fa-wand-magic-sparkles"></i> Forma Uygula</button>
             </div>
         </div>
     </div>
@@ -2273,6 +2352,284 @@
             toggleDamage = function (id) { origToggle(id); updateProgress(); saveDraft(); };
             restoreDraft();
             updateProgress();
+        });
+    </script>
+
+
+    <script>
+        // ===== OCR: RUHSATTAN DOLDUR (Tesseract.js, tamamen tarayıcıda) =====
+
+        // OCR-PARSER-START
+        // TC Kimlik No algoritma kontrolü
+        function isValidTc(tc) {
+            if (!/^[1-9]\d{10}$/.test(tc)) return false;
+            const d = tc.split('').map(Number);
+            const d10 = ((d[0] + d[2] + d[4] + d[6] + d[8]) * 7 - (d[1] + d[3] + d[5] + d[7])) % 10;
+            const d11 = d.slice(0, 10).reduce((a, b) => a + b, 0) % 10;
+            return ((d10 + 10) % 10) === d[9] && d11 === d[10];
+        }
+
+        // Ruhsat metnini alanlara ayırır. Ruhsat kartındaki standart alan kodlarını (A, D.1, E, P.5 ...) ve
+        // biçim kurallarını (plaka, 17 haneli şasi, TC algoritması) birlikte kullanır.
+        function parseRuhsatText(rawText) {
+            const text = rawText.toLocaleUpperCase('tr-TR').replace(/[|«»“”"']/g, ' ');
+            const lines = text.split(/\r?\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+            const codeRe = code => new RegExp('[(\\[{]?\\s*' + code.split('.').join('\\s*[.,·:]\\s*') + '\\s*[)\\]}]', '');
+            const anyCode = /[(\[{]\s*[A-Z](\s*[.,·]\s*\d){0,2}\s*[)\]}]/;
+
+            // Kod etiketinden sonra gelen değeri bul (aynı satır, yoksa alt satır)
+            function byCode(code, labels = []) {
+                const re = codeRe(code);
+                for (let i = 0; i < lines.length; i++) {
+                    const m = lines[i].match(re);
+                    if (!m) continue;
+                    const clean = str => {
+                        let v = str.split(anyCode)[0];
+                        labels.forEach(l => { v = v.replace(new RegExp('(^|[^A-Z0-9ÇĞİÖŞÜ])' + l.replace(/\./g, '\\.') + '(?=$|[^A-Z0-9ÇĞİÖŞÜ])', 'g'), '$1 '); });
+                        v = v.replace(/^\s*\/\s*/, '');
+                        return v.replace(/^[\s:.\-–]+|[\s:.\-–]+$/g, '').replace(/\s+/g, ' ');
+                    };
+                    let v = clean(lines[i].slice(m.index + m[0].length));
+                    if (v.replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '').length < 2 && lines[i + 1]) v = clean(lines[i + 1]);
+                    if (v.replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '').length >= 2) return v;
+                }
+                return '';
+            }
+            const byLabel = (re) => {
+                for (let i = 0; i < lines.length; i++) {
+                    const m = lines[i].match(re);
+                    if (!m) continue;
+                    let v = lines[i].slice(m.index + m[0].length).replace(/^[\s:.\-]+/, '').split(anyCode)[0].trim();
+                    if (v.length < 2 && lines[i + 1]) v = lines[i + 1].split(anyCode)[0].trim();
+                    if (v.length >= 2) return v;
+                }
+                return '';
+            };
+            const r = {};
+
+            // Plaka: 01-81 il kodu + 1-3 harf + 2-4 rakam
+            const plakaRe = /\b(0[1-9]|[1-7]\d|8[01])\s?([A-Z]{1,3})\s?(\d{2,4})\b/;
+            const fixDigits = s => s.replace(/[OQD]/g, '0').replace(/[IL|]/g, '1').replace(/S/g, '5').replace(/B/g, '8');
+            let pSrc = byCode('A', ['PLAKA', 'PLAKASI']);
+            let pm = (pSrc && pSrc.match(plakaRe)) || null;
+            if (!pm) {
+                pm = text.replace(/\n/g, ' ').match(plakaRe);
+            }
+            if (pm) r.plaka = pm[1] + ' ' + pm[2] + ' ' + pm[3];
+
+            // Belge seri no: 2 harf + 6 rakam
+            for (const l of lines) {
+                if (!/SER[İI]|BELGE/.test(l)) continue;
+                const m = l.match(/\b([A-Z]{2})\s*(?:NO|N°|Nº)?\s*[:.]?\s*([0-9OIL]{6})\b/);
+                if (m && !/^(NO|SE)$/.test(m[1])) { r.seri = m[1] + fixDigits(m[2]); break; }
+            }
+
+            // Şasi (VIN): 17 karakter, I/O/Q içermez
+            const vinFrom = (s, minDigits = 3) => {
+                const compact = (s || '').replace(/[\s\-.]/g, '');
+                if (/[^A-Z0-9]/.test(compact) && minDigits > 3) return '';
+                for (const m of compact.matchAll(/(?=([A-Z0-9]{17}))/g)) {
+                    const v = m[1].replace(/O/g, '0').replace(/[IQ]/g, c => (c === 'I' ? '1' : '0'));
+                    if ((v.match(/[A-Z]/g) || []).length >= 2 && (v.match(/\d/g) || []).length >= minDigits && /\d{3}$/.test(v)) return v;
+                }
+                return '';
+            };
+            const sasiLabels = ['ŞASE', 'ŞASİ', 'SASE', 'SASI', 'NO', 'NUMARASI'];
+            r.sasi = vinFrom(byCode('E', sasiLabels)) || vinFrom(byLabel(/ŞAS[EİI]\s*NO|SAS[EI]\s*NO/)) || lines.map(l => vinFrom(l, 6)).find(Boolean) || '';
+
+            // Motor no
+            const motor = byCode('P.5', ['MOTOR', 'NO', 'NUMARASI']) || byLabel(/MOTOR\s*NO/);
+            if (motor) r.motor = motor.replace(/[^A-Z0-9\-]/g, '').slice(0, 20);
+
+            // Marka + ticari adı
+            const marka = byCode('D.1', ['MARKASI', 'MARKA']);
+            const ticari = byCode('D.3', ['TİCARİ', 'TICARI', 'ADI']) || byCode('D.2', ['TİPİ', 'TIPI']);
+            const mm = [marka, ticari].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' ');
+            if (mm) r.markaModel = mm.replace(/[^A-Z0-9ÇĞİÖŞÜ .\-/]/g, '').trim();
+
+            // Model yılı
+            const yilSrc = byCode('D.4', ['MODEL', 'YILI']) || byLabel(/MODEL\s*YIL/);
+            const ym = (yilSrc || '').match(/\b(19[5-9]\d|20\d{2})\b/);
+            if (ym && +ym[1] <= new Date().getFullYear() + 1) r.yil = ym[1];
+
+            // Ruhsat sahibi
+            const soyad = byCode('C.1.1', ['SOYADI', 'SOYAD', 'TİCARİ', 'ÜNVANI', 'UNVANI', 'TICARI']);
+            const ad = byCode('C.1.2', ['ADI', 'AD']);
+            const sahip = [ad, soyad].filter(Boolean).join(' ').replace(/[^A-ZÇĞİÖŞÜ .]/g, '').replace(/\s+/g, ' ').trim();
+            if (sahip.length >= 3) r.sahipAd = sahip;
+
+            // TC: önce Y.4 alanı, sonra tüm metinde algoritmayı geçen ilk 11 hane
+            const tcCands = [byCode('Y.4', ['T.C.', 'TC', 'KİMLİK', 'VERGİ', 'NO']), text]
+                .flatMap(s => [...(s || '').replace(/(\d)\s(?=\d)/g, '$1').matchAll(/\d{11}/g)].map(m => m[0]));
+            r.sahipTc = tcCands.find(isValidTc) || '';
+
+            Object.keys(r).forEach(k => { if (!r[k]) delete r[k]; });
+            return r;
+        }
+        // OCR-PARSER-END
+
+        const OCR_FIELDS = [
+            { key: 'plaka', label: 'Plaka', id: 'aracPlaka' },
+            { key: 'seri', label: 'Ruhsat Seri No', id: 'aracRuhsat' },
+            { key: 'markaModel', label: 'Marka / Model', id: 'aracMarkaModel' },
+            { key: 'yil', label: 'Model Yılı', id: 'aracYil' },
+            { key: 'sasi', label: 'Şasi No', id: 'aracSasi' },
+            { key: 'motor', label: 'Motor No', id: 'aracMotor' },
+            { key: 'sahipAd', label: 'Ruhsat Sahibi', id: 'sahipAd' },
+            { key: 'sahipTc', label: 'Sahip TC / Vergi No', id: 'sahipTc' },
+        ];
+        let ocrPrefix = 'm', ocrWorker = null, ocrBusy = false;
+
+        function loadScript(src) {
+            return new Promise((res, rej) => {
+                if (document.querySelector(`script[src="${src}"]`)) return res();
+                const sc = document.createElement('script');
+                sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('Kütüphane yüklenemedi'));
+                document.head.appendChild(sc);
+            });
+        }
+
+        function setOcrProgress(status, pct) {
+            document.getElementById('ocrProgressWrap').classList.remove('hidden');
+            document.getElementById('ocrStatus').textContent = status;
+            document.getElementById('ocrPct').textContent = Math.round(pct) + '%';
+            document.getElementById('ocrBar').style.width = pct + '%';
+        }
+
+        function openOcr(prefix) {
+            ocrPrefix = prefix;
+            const side = document.getElementById('ocrSide');
+            side.textContent = prefix === 'm' ? 'Mağdur aracı' : 'Vuran aracı';
+            side.className = 'text-xs font-semibold px-2 py-0.5 rounded-full ' + (prefix === 'm' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700');
+            ['ocrProgressWrap', 'ocrResults', 'ocrPreview', 'ocrRetry'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('ocrDropEmpty').classList.remove('hidden');
+            document.getElementById('ocrApply').disabled = true;
+            document.getElementById('ocrFile').value = '';
+            document.getElementById('ocrModal').classList.remove('hidden');
+            // Kütüphaneyi arka planda önceden yükle
+            loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js').catch(() => { });
+        }
+        function closeOcr() { document.getElementById('ocrModal').classList.add('hidden'); }
+
+        // Görüntüyü OCR için hazırla: boyutlandır, gri tonla, kontrastı artır
+        function prepareImage(img) {
+            const target = 2000;
+            const scale = Math.min(2.5, target / Math.max(img.naturalWidth, img.naturalHeight));
+            const c = document.createElement('canvas');
+            c.width = Math.round(img.naturalWidth * scale);
+            c.height = Math.round(img.naturalHeight * scale);
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+            const data = ctx.getImageData(0, 0, c.width, c.height);
+            const px = data.data;
+            let min = 255, max = 0;
+            for (let i = 0; i < px.length; i += 4) {
+                const g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+                px[i] = g; if (g < min) min = g; if (g > max) max = g;
+            }
+            const range = Math.max(1, max - min);
+            for (let i = 0; i < px.length; i += 4) {
+                const v = Math.max(0, Math.min(255, (px[i] - min) * 255 / range));
+                px[i] = px[i + 1] = px[i + 2] = v;
+            }
+            ctx.putImageData(data, 0, 0);
+            return c;
+        }
+
+        async function handleOcrFile(file) {
+            if (!file || ocrBusy) return;
+            if (!file.type.startsWith('image/')) { showToast('Lütfen bir fotoğraf seçin', '#ef4444'); return; }
+            ocrBusy = true;
+            document.getElementById('ocrApply').disabled = true;
+            document.getElementById('ocrResults').classList.add('hidden');
+            const url = URL.createObjectURL(file);
+            const img = document.getElementById('ocrPreview');
+            img.src = url; img.classList.remove('hidden');
+            document.getElementById('ocrDropEmpty').classList.add('hidden');
+            try {
+                await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+                setOcrProgress('OCR motoru yükleniyor…', 3);
+                await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+                if (!ocrWorker) {
+                    setOcrProgress('Türkçe dil paketi hazırlanıyor (ilk seferde biraz sürer)…', 8);
+                    ocrWorker = await Tesseract.createWorker('tur', 1, {
+                        logger: m => {
+                            if (m.status === 'recognizing text') setOcrProgress('Metin okunuyor…', 20 + m.progress * 78);
+                            else if (typeof m.progress === 'number') setOcrProgress('Dil paketi yükleniyor…', 8 + m.progress * 12);
+                        }
+                    });
+                }
+                setOcrProgress('Görüntü iyileştiriliyor…', 18);
+                const canvas = prepareImage(img);
+                const { data } = await ocrWorker.recognize(canvas);
+                setOcrProgress('Tamamlandı', 100);
+                showOcrResults(parseRuhsatText(data.text), data.text);
+            } catch (err) {
+                console.error(err);
+                setOcrProgress('Okuma başarısız: ' + (err.message || 'bilinmeyen hata') + '. İnternet bağlantınızı kontrol edin.', 0);
+            } finally {
+                ocrBusy = false;
+                document.getElementById('ocrRetry').classList.remove('hidden');
+            }
+        }
+
+        function showOcrResults(parsed, raw) {
+            const wrap = document.getElementById('ocrFields');
+            wrap.innerHTML = '';
+            let found = 0;
+            OCR_FIELDS.forEach(f => {
+                const val = parsed[f.key] || '';
+                if (val) found++;
+                const row = document.createElement('label');
+                row.className = 'ocr-row grid grid-cols-[auto_8.5rem_1fr] items-center gap-3' + (val ? '' : ' missing');
+                row.innerHTML = `<input type="checkbox" class="w-4 h-4 rounded" data-key="${f.key}" ${val ? 'checked' : ''}>
+                    <span class="text-xs font-semibold" style="color:var(--muted)">${f.label}</span>
+                    <input type="text" data-val="${f.key}" placeholder="Okunamadı – elle yazabilirsiniz">`;
+                row.querySelector('[data-val]').value = val;
+                row.querySelector('[data-val]').addEventListener('input', e => { row.querySelector('[data-key]').checked = !!e.target.value.trim(); });
+                wrap.appendChild(row);
+            });
+            const score = document.getElementById('ocrScore');
+            score.textContent = `${found} / ${OCR_FIELDS.length} alan bulundu`;
+            score.className = 'text-xs font-bold px-2 py-1 rounded-full ' + (found >= 5 ? 'bg-emerald-100 text-emerald-700' : found >= 2 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700');
+            document.getElementById('ocrRaw').textContent = raw || '(boş)';
+            document.getElementById('ocrResults').classList.remove('hidden');
+            document.getElementById('ocrApply').disabled = false;
+            if (found === 0) showToast('Alan bulunamadı. Daha net, düz bir fotoğraf deneyin.', '#f59e0b');
+        }
+
+        function applyOcr() {
+            let n = 0;
+            document.querySelectorAll('#ocrFields .ocr-row').forEach(row => {
+                const key = row.querySelector('[data-key]').dataset.key;
+                const val = row.querySelector('[data-val]').value.trim();
+                if (!row.querySelector('[data-key]').checked || !val) return;
+                const f = OCR_FIELDS.find(x => x.key === key);
+                const el = document.getElementById(ocrPrefix + '_' + f.id);
+                if (!el) return;
+                if (f.id.startsWith('sahip')) {
+                    const same = document.getElementById(ocrPrefix + '_ayniKisi');
+                    if (same) same.checked = false;
+                }
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.classList.remove('ocr-filled'); void el.offsetWidth; el.classList.add('ocr-filled');
+                n++;
+            });
+            closeOcr();
+            if (n) {
+                showToast(`${n} alan ruhsattan dolduruldu`, '#10B981');
+                document.getElementById(ocrPrefix + '_aracPlaka').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Sürükle-bırak
+        document.addEventListener('DOMContentLoaded', () => {
+            const drop = document.getElementById('ocrDrop');
+            ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+            ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+            drop.addEventListener('drop', e => handleOcrFile(e.dataTransfer.files[0]));
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOcr(); });
         });
     </script>
 
