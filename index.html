@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hasar Dosyası Açma Asistanı</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>try { window.tailwind = window.tailwind || {}; tailwind.config = { darkMode: 'class' }; } catch (e) { } try { if (localStorage.getItem('hasar_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) { }</script>
+    <meta name="theme-color" content="#0b1020">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -96,6 +98,146 @@
             border-bottom: 1px solid #e5e7eb;
             padding-bottom: 0.5rem;
         }
+
+        /* ===== PREMIUM TASARIM KATMANI ===== */
+        :root {
+            --bg: #f4f6fb;
+            --card: #ffffff;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --field: #f8fafc;
+            --brand: #4f46e5;
+            --ring: rgba(79, 70, 229, .22);
+        }
+
+        html.dark {
+            --bg: #0b1120;
+            --card: #131c31;
+            --ink: #e5e9f2;
+            --muted: #94a3b8;
+            --line: #243049;
+            --field: #0f1829;
+            --ring: rgba(129, 140, 248, .3);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        main { background:
+            radial-gradient(1100px 420px at 85% -10%, rgba(99, 102, 241, .10), transparent 60%),
+            radial-gradient(900px 380px at 0% 0%, rgba(14, 165, 233, .08), transparent 55%), var(--bg) !important; }
+
+        /* Kartlar */
+        #view-form form > div,
+        #view-form .grid > div,
+        #view-list .bg-white {
+            background: var(--card) !important;
+            border-color: var(--line) !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -12px rgba(15, 23, 42, .10) !important;
+            transition: box-shadow .25s, transform .25s;
+        }
+
+        #view-list .grid > .bg-white:hover { transform: translateY(-2px); }
+
+        /* Başlık metinleri */
+        h2.text-2xl { letter-spacing: -.02em; font-size: 1.75rem; color: var(--ink) !important; }
+        h3.text-slate-800, h4.text-gray-800 { color: var(--ink) !important; }
+        .text-gray-500, .text-gray-600 { color: var(--muted) !important; }
+
+        /* Form alanları */
+        .input-group label { color: var(--muted) !important; font-size: .78rem; letter-spacing: .01em; }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: .65rem .85rem;
+            border-radius: .7rem;
+            border: 1px solid var(--line);
+            background: var(--field) !important;
+            color: var(--ink);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+
+        .input-group input:hover { border-color: #a5b4fc; }
+        .input-group input:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 4px var(--ring);
+            background: var(--card) !important;
+        }
+        .input-group input.is-invalid { border-color: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, .15); }
+        .input-group input.is-valid { border-color: #10b981; }
+        .field-hint { font-size: .72rem; margin-top: .25rem; color: #ef4444; min-height: 0; }
+
+        /* Tablo */
+        table thead tr { background: var(--field) !important; color: var(--muted) !important; }
+        table thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+        table tbody tr { border-color: var(--line) !important; }
+        table tbody tr:hover { background: rgba(99, 102, 241, .06) !important; }
+        table tbody td { color: var(--ink); }
+        .sortable { cursor: pointer; user-select: none; }
+        .sortable:hover { color: var(--brand) !important; }
+
+        /* Kenar çubuğu */
+        aside { background: linear-gradient(180deg, #0b1020 0%, #111a33 100%) !important; }
+        #btn-nav-form.bg-blue-600, #btn-nav-list.bg-blue-600 {
+            background: linear-gradient(135deg, #4f46e5, #2563eb) !important;
+            box-shadow: 0 8px 20px -8px rgba(79, 70, 229, .8);
+        }
+
+        /* Toast */
+        #toast { border-radius: 14px; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .35); backdrop-filter: blur(6px); }
+
+        /* Odak erişilebilirliği */
+        :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+        button { transition: transform .15s, box-shadow .2s, background-color .2s; }
+        button:active { transform: scale(.97); }
+
+        /* Hasar parçaları */
+        svg g[id^="car-"] { cursor: pointer; }
+
+        /* İlerleme çubuğu */
+        #formProgress {
+            position: sticky; top: -1px; z-index: 30;
+            margin: 0 0 1.25rem; padding: .8rem 1rem;
+            background: color-mix(in srgb, var(--card) 88%, transparent);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--line); border-radius: 1rem;
+            box-shadow: 0 8px 24px -14px rgba(15, 23, 42, .25);
+        }
+        #formProgress .bar { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+        #formProgress .bar > i { display: block; height: 100%; width: 0; border-radius: 99px;
+            background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981); transition: width .4s ease; }
+        .step-chip { font-size: .72rem; font-weight: 600; padding: .25rem .6rem; border-radius: 99px;
+            background: var(--field); color: var(--muted); border: 1px solid var(--line); cursor: pointer; white-space: nowrap; }
+        .step-chip.done { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+        html.dark .step-chip.done { background: rgba(16, 185, 129, .15); color: #6ee7b7; border-color: rgba(16, 185, 129, .3); }
+
+        /* Kısayol ipucu */
+        kbd { font: 600 .68rem Inter, sans-serif; padding: .1rem .4rem; border-radius: .35rem;
+            background: var(--field); border: 1px solid var(--line); color: var(--muted); }
+
+        /* Tamamlanmış bölüm rozeti */
+        .section-done { box-shadow: 0 0 0 1.5px rgba(16, 185, 129, .45), 0 8px 24px -12px rgba(16, 185, 129, .25) !important; }
+
+        /* Koyu mod ek düzeltmeleri */
+        html.dark .bg-white, html.dark .bg-gray-50, html.dark .bg-slate-50 { background-color: var(--card) !important; }
+        html.dark .text-gray-800, html.dark .text-slate-800, html.dark .text-gray-700 { color: var(--ink) !important; }
+        html.dark .border-gray-100, html.dark .border-gray-200, html.dark .border-slate-100, html.dark .border-slate-200 { border-color: var(--line) !important; }
+        html.dark .input-group input { color-scheme: dark; }
+        html.dark #customModalContent, html.dark #detailsModal > div { background: var(--card); color: var(--ink); }
+        html.dark #detailsModal .bg-gray-50, html.dark #customModal .bg-gray-50\/80 { background: var(--field) !important; }
+
+        @media (max-width: 767px) {
+            #savebar { left: 0 !important; }
+        }
+        @media print { #formProgress, #savebar, aside, header { display: none !important; } }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
     </style>
 </head>
 
@@ -132,6 +274,16 @@
                 <i class="fa-solid fa-list"></i> Kayıtlı Dosyalar
             </button>
         </nav>
+        <div class="px-4 pb-4 space-y-3">
+            <button onclick="toggleTheme()" id="btnTheme"
+                class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm text-slate-300 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50">
+                <span class="flex items-center gap-3"><i class="fa-solid fa-moon" id="themeIcon"></i> <span id="themeLabel">Koyu Mod</span></span>
+            </button>
+            <div class="text-[11px] text-slate-500 leading-relaxed px-1">
+                <div class="flex justify-between"><span>Kaydet</span><span><kbd>Ctrl</kbd> + <kbd>S</kbd></span></div>
+                <div class="flex justify-between mt-1"><span>Ara</span><span><kbd>/</kbd></span></div>
+            </div>
+        </div>
         <div class="p-4 text-xs text-slate-500 border-t border-slate-800 text-center">
             <div>
                 <a href="https://efekanerdogan.com/" target="_blank"
@@ -156,6 +308,7 @@
                     HASAR ASİSTANI</h1>
             </div>
             <div class="flex gap-2">
+                <button onclick="toggleTheme()" class="p-2 bg-slate-700 rounded" aria-label="Tema"><i class="fa-solid fa-circle-half-stroke"></i></button>
                 <button onclick="switchTab('form')" class="p-2 bg-blue-600 rounded"><i
                         class="fa-solid fa-plus"></i></button>
                 <button onclick="switchTab('list')" class="p-2 bg-slate-700 rounded"><i
@@ -175,7 +328,19 @@
                     </div>
                 </div>
 
-                <form id="hasarForm" class="space-y-8">
+                <div id="formProgress">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <div class="flex items-center gap-2 text-sm font-semibold">
+                            <i class="fa-solid fa-list-check text-indigo-500"></i>
+                            <span>Dosya doluluk oranı: <span id="progressPct">0%</span></span>
+                        </div>
+                        <span id="draftStatus" class="text-xs text-slate-400"><i class="fa-regular fa-floppy-disk"></i> Taslak otomatik kaydedilir</span>
+                    </div>
+                    <div class="bar"><i id="progressBar"></i></div>
+                    <div id="stepChips" class="flex gap-2 mt-3 overflow-x-auto pb-1"></div>
+                </div>
+
+                <form id="hasarForm" class="space-y-8" autocomplete="off">
 
                     <!-- 1. Kaza ve Genel Bilgiler -->
                     <div
@@ -560,10 +725,14 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end mt-4 pt-4 border-t border-slate-200">
+                    <div id="savebar" class="sticky bottom-0 z-30 -mx-4 md:mx-0 px-4 md:px-5 py-3 md:rounded-2xl flex flex-wrap items-center justify-between gap-3 border border-slate-200"
+                        style="background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(12px);box-shadow:0 -10px 30px -18px rgba(15,23,42,.35)">
+                        <button type="button" onclick="clearForm()"
+                            class="text-sm font-medium text-slate-500 hover:text-red-500 px-3 py-2 rounded-lg flex items-center gap-2"><i class="fa-solid fa-eraser"></i> Formu Temizle</button>
                         <button type="button" onclick="saveDocument()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-3 text-lg">
-                            <i class="fa-solid fa-save text-xl"></i> Dosyayı Kaydet
+                            class="text-white px-7 py-3 rounded-xl font-bold shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-3"
+                            style="background:linear-gradient(135deg,#4f46e5,#2563eb)">
+                            <i class="fa-solid fa-circle-check"></i> Dosyayı Kaydet <kbd class="hidden md:inline" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff">Ctrl+S</kbd>
                         </button>
                     </div>
                 </form>
@@ -577,6 +746,10 @@
                         <p class="text-gray-500 text-sm">Bilgisayarına kaydedilen tüm hasar dosyaları.</p>
                     </div>
                     <div class="flex gap-3">
+                        <button onclick="exportCsv()"
+                            class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel (CSV)
+                        </button>
                         <button onclick="exportAllRecords()"
                             class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm flex items-center gap-2">
                             <i class="fa-solid fa-download"></i> Tümünü Yedekle
@@ -702,12 +875,12 @@
                                             onchange="toggleSelectAll()"
                                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4">
                                     </th>
-                                    <th class="p-4 font-semibold">Tarih</th>
-                                    <th class="p-4 font-semibold">Dosya No</th>
-                                    <th class="p-4 font-semibold">Mağdur Adı</th>
+                                    <th class="p-4 font-semibold sortable" onclick="setSort('tarih')">Tarih <i class="fa-solid fa-sort text-[10px] opacity-50" data-sort="tarih"></i></th>
+                                    <th class="p-4 font-semibold sortable" onclick="setSort('dosyaNo')">Dosya No <i class="fa-solid fa-sort text-[10px] opacity-50" data-sort="dosyaNo"></i></th>
+                                    <th class="p-4 font-semibold sortable" onclick="setSort('ad')">Mağdur Adı <i class="fa-solid fa-sort text-[10px] opacity-50" data-sort="ad"></i></th>
                                     <th class="p-4 font-semibold">Mağdur Plaka</th>
                                     <th class="p-4 font-semibold">Vuran Plaka</th>
-                                    <th class="p-4 font-semibold">Hasar Tutarı</th>
+                                    <th class="p-4 font-semibold sortable" onclick="setSort('tutar')">Hasar Tutarı <i class="fa-solid fa-sort text-[10px] opacity-50" data-sort="tutar"></i></th>
                                     <th class="p-4 font-semibold text-right">İşlem</th>
                                 </tr>
                             </thead>
@@ -1254,6 +1427,18 @@
                 }
 
                 return matchesSearch && matchesDate;
+            });
+
+            // Sıralama
+            const sv = {
+                tarih: r => r.genel?.tarih || '',
+                dosyaNo: r => (r.genel?.dosyaNo || '').toLowerCase(),
+                ad: r => (r.magdur?.surucuAd || '').toLowerCase(),
+                tutar: r => Number(r.sigorta?.tutar || 0)
+            }[sortKey];
+            if (sv) records.sort((a, b) => (sv(a) > sv(b) ? 1 : sv(a) < sv(b) ? -1 : 0) * sortDir);
+            document.querySelectorAll('[data-sort]').forEach(i => {
+                i.className = 'fa-solid text-[10px] ' + (i.dataset.sort === sortKey ? (sortDir === 1 ? 'fa-sort-up text-indigo-500' : 'fa-sort-down text-indigo-500') : 'fa-sort opacity-50');
             });
 
             // Dashboard İstatistikleri Güncelle
@@ -1904,6 +2089,193 @@
             `;
         }
     </script>
+    <script>
+        // ===== PREMIUM İYİLEŞTİRMELER =====
+        let sortKey = null, sortDir = 1;
+        const DRAFT_KEY = 'hasar_taslak_v1';
+
+        function setSort(key) {
+            if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = 1; }
+            renderTable();
+        }
+
+        // Tema
+        function applyThemeUi() {
+            const dark = document.documentElement.classList.contains('dark');
+            const i = document.getElementById('themeIcon'), l = document.getElementById('themeLabel');
+            if (i) i.className = 'fa-solid ' + (dark ? 'fa-sun' : 'fa-moon');
+            if (l) l.textContent = dark ? 'Açık Mod' : 'Koyu Mod';
+        }
+        function toggleTheme() {
+            const dark = document.documentElement.classList.toggle('dark');
+            try { localStorage.setItem('hasar_theme', dark ? 'dark' : 'light'); } catch (e) { }
+            applyThemeUi();
+        }
+
+        // Form alanları & ilerleme
+        const formFields = () => [...document.querySelectorAll('#hasarForm input')]
+            .filter(el => !['hidden', 'checkbox', 'button'].includes(el.type) && !el.closest('#ekspertizSection'));
+        const sectionCards = () => [...document.querySelectorAll('#hasarForm h3')]
+            .map(h => ({ title: h.textContent.replace(/\s+/g, ' ').trim(), card: h.parentElement }))
+            .filter(x => !x.card.closest('#ekspertizSection'));
+
+        function updateProgress() {
+            const fields = formFields();
+            const filled = fields.filter(f => f.value.trim() !== '').length;
+            const pct = fields.length ? Math.round(filled / fields.length * 100) : 0;
+            document.getElementById('progressPct').textContent = pct + '%';
+            document.getElementById('progressBar').style.width = pct + '%';
+
+            const chips = document.getElementById('stepChips');
+            chips.innerHTML = '';
+            sectionCards().forEach(({ title, card }, idx) => {
+                const inputs = [...card.querySelectorAll('input')].filter(el => !['hidden', 'checkbox'].includes(el.type));
+                const done = inputs.length ? inputs.filter(f => f.value.trim()).length / inputs.length >= 0.6 : false;
+                const hasDamage = card.querySelector('#carDiagramSvg') && JSON.parse(document.getElementById('hasarliParcalar').value || '[]').length > 0;
+                const ok = done || hasDamage;
+                card.classList.toggle('section-done', ok);
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'step-chip' + (ok ? ' done' : '');
+                b.innerHTML = (ok ? '<i class="fa-solid fa-check"></i> ' : '') + title.replace(/^\d+\s*/, '');
+                b.onclick = () => card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                chips.appendChild(b);
+            });
+        }
+
+        // Taslak (otomatik kayıt)
+        let draftTimer = null;
+        function collectDraft() {
+            const d = {};
+            document.querySelectorAll('#hasarForm input').forEach(el => {
+                if (!el.id || el.type === 'button') return;
+                d[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+            });
+            return d;
+        }
+        function saveDraft() {
+            if (currentEditId !== null) return;
+            const d = collectDraft();
+            const meaningful = Object.entries(d).some(([k, v]) => k !== 'kazaTarihi' && k !== 'hasarliParcalar' && v && v !== true)
+                || (d.hasarliParcalar && d.hasarliParcalar !== '[]');
+            try {
+                if (meaningful) {
+                    localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+                    const el = document.getElementById('draftStatus');
+                    if (el) el.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> Taslak kaydedildi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                } else localStorage.removeItem(DRAFT_KEY);
+            } catch (e) { }
+        }
+        function restoreDraft() {
+            if (currentEditId !== null) return;
+            let d; try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { d = null; }
+            if (!d) { updateProgress(); return; }
+            Object.entries(d).forEach(([id, v]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (el.type === 'checkbox') { el.checked = v; el.dispatchEvent(new Event('change')); } else el.value = v;
+            });
+            try { loadDamageToCar(JSON.parse(d.hasarliParcalar || '[]')); } catch (e) { }
+            updateProgress();
+            showToast('Yarım kalan taslağınız geri yüklendi', '#4f46e5');
+        }
+        function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) { } }
+
+        function clearForm() {
+            showCustomModal({
+                title: 'Form temizlensin mi?',
+                message: 'Girdiğiniz tüm bilgiler silinecek.',
+                type: 'warning',
+                confirmText: 'Evet, Temizle',
+                onConfirm: () => {
+                    clearDraft();
+                    document.getElementById('hasarForm').reset();
+                    document.getElementById('kazaTarihi').valueAsDate = new Date();
+                    try { loadDamageToCar([]); updateDamageInput(); } catch (e) { }
+                    updateProgress();
+                }
+            });
+        }
+
+        // Doğrulama (TC kimlik & telefon & plaka)
+        function validateField(el) {
+            let msg = '';
+            const v = el.value.replace(/\s/g, '');
+            if (/Tc$/.test(el.id) && v && !/^[1-9]\d{10}$/.test(v)) msg = 'TC Kimlik No 11 haneli olmalıdır';
+            if (/Tel$/.test(el.id) && v && v.replace(/\D/g, '').length < 10) msg = 'Telefon eksik görünüyor';
+            el.classList.toggle('is-invalid', !!msg);
+            el.classList.toggle('is-valid', !msg && !!v && /(Tc|Tel)$/.test(el.id));
+            let hint = el.parentElement.querySelector('.field-hint');
+            if (msg) {
+                if (!hint) { hint = document.createElement('div'); hint.className = 'field-hint'; el.parentElement.appendChild(hint); }
+                hint.textContent = msg;
+            } else if (hint) hint.remove();
+        }
+
+        // Kısayollar
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                if (!document.getElementById('view-form').classList.contains('hidden')) saveDocument();
+            }
+            const tag = (document.activeElement?.tagName || '').toLowerCase();
+            if (e.key === '/' && tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+                e.preventDefault();
+                switchTab('list');
+                document.getElementById('searchInput').focus();
+            }
+            if (e.key === 'Escape') { try { closeModal(); } catch (_) { } }
+        });
+
+        // CSV dışa aktar (Excel uyumlu)
+        function exportCsv() {
+            const recs = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+            if (!recs.length) { showToast('Dışa aktarılacak kayıt yok', '#ef4444'); return; }
+            const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+            const rows = [['Tarih', 'Saat', 'İl', 'İlçe', 'Dosya No', 'Mağdur', 'Mağdur Plaka', 'Vuran', 'Vuran Plaka', 'Sigorta', 'Poliçe No', 'Eksper', 'Hasar Tutarı']];
+            recs.forEach(r => rows.push([r.genel?.tarih, r.genel?.saat, r.genel?.il, r.genel?.ilce, r.genel?.dosyaNo,
+            r.magdur?.surucuAd, r.magdur?.plaka, r.vuran?.surucuAd, r.vuran?.plaka, r.sigorta?.sirket, r.sigorta?.policeNo, r.sigorta?.eksperSirketi,
+            r.sigorta?.tutar ? Number(r.sigorta.tutar).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '']));
+            const csv = '﻿' + rows.map(r => r.map(q).join(';')).join('\r\n');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            a.download = 'hasar-dosyalari-' + new Date().toISOString().slice(0, 10) + '.csv';
+            document.body.appendChild(a); a.click(); a.remove();
+            showToast('Excel (CSV) dosyası indirildi', '#10B981');
+        }
+
+        // Kaydetme sonrası taslağı temizle; sekme geçişinde taslağı geri getir
+        const _origSave = saveDocument;
+        saveDocument = async function () {
+            const before = localStorage.getItem(DB_KEY);
+            await _origSave();
+            if (localStorage.getItem(DB_KEY) !== before) { clearDraft(); updateProgress(); }
+        };
+        const _origSwitch = switchTab;
+        switchTab = function (tab) {
+            _origSwitch(tab);
+            if (tab === 'form') { restoreDraft(); }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyThemeUi();
+            const form = document.getElementById('hasarForm');
+            form.addEventListener('input', e => {
+                updateProgress();
+                clearTimeout(draftTimer);
+                draftTimer = setTimeout(saveDraft, 600);
+            });
+            form.addEventListener('change', () => { updateProgress(); clearTimeout(draftTimer); draftTimer = setTimeout(saveDraft, 600); });
+            form.addEventListener('focusout', e => { if (e.target.matches('input')) validateField(e.target); });
+            // Hasar haritası değişince ilerleme güncellensin
+            const hp = document.getElementById('hasarliParcalar');
+            const origToggle = toggleDamage;
+            toggleDamage = function (id) { origToggle(id); updateProgress(); saveDraft(); };
+            restoreDraft();
+            updateProgress();
+        });
+    </script>
+
 </body>
 
 </html>
